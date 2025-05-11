@@ -5,6 +5,12 @@ __pycache__/
 
 # C extensions
 *.so
+.scubas_config
+
+# Ignore files Folders
+databulk
+figures
+data/GEBCO_2024/
 
 # Distribution / packaging
 .Python
