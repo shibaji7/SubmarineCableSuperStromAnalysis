@@ -33,14 +33,16 @@ class SCUBASModel(object):
             ["dataset/May2024/had20240510psec.sec.txt"],
             ["dataset/May2024/stj20240510psec.sec.txt"],
         ],
-        clean=True
+        clean=True,
     ):
         if clean:
             self.frames = clean_B_fields(stns, stn_files)
         else:
             frames = {}
             for stn, files in zip(stns, stn_files):
-                frames[stn] = pd.concat([pd.read_csv(f, parse_dates=["Date"]) for f in files])
+                frames[stn] = pd.concat(
+                    [pd.read_csv(f, parse_dates=["Date"]) for f in files]
+                )
                 frames[stn] = frames[stn].set_index("Date")
         return
 
@@ -79,7 +81,7 @@ class SCUBASModel(object):
         minor_locator=mdates.MinuteLocator(byminute=range(0, 60, 1)),
         text_size=15,
         ylim=[-3000, 3000],
-        interval=2
+        interval=2,
     ):
         sp = StackPlots(
             nrows=1, ncols=1, datetime=True, figsize=(6, 4), text_size=text_size

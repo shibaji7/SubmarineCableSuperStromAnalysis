@@ -79,7 +79,7 @@ def read_dataset(base_path: str = "data/1989/") -> pd.DataFrame:
     for stn, coord in zip(stns, coords):
         data = frames[stn]
         data.drop_duplicates().sort_index(inplace=True)
-        print(len(data), 24*60*3)
+        print(len(data), 24 * 60 * 3)
         _, ax = sp.plot_stack_plots(
             data.index,
             data.X - np.median(data.X.iloc[:60]),
@@ -131,7 +131,7 @@ def compile():
     None
     """
     read_dataset()
-    stns = ["FRD","FRD", "STJ","STJ", "STJ","STJ","STJ","HAD", "HAD"]
+    stns = ["FRD", "FRD", "STJ", "STJ", "STJ", "STJ", "STJ", "HAD", "HAD"]
     segment_files = [station_maps[s] for s in stns]
     cable = get_cable_informations()
     model = SCUBASModel(
@@ -148,17 +148,22 @@ def compile():
         fname="figures/1989.Scubas.png",
         date_lim=[dt.datetime(1989, 3, 12, 12), dt.datetime(1989, 3, 14, 12)],
         fig_title="SCUBAS / Time: UT since 12 UT on 12 March 1989",
-        text_size=10, ylim=[-800, 800], interval=6
+        text_size=10,
+        ylim=[-800, 800],
+        interval=6,
     )
     model.plot_profiles(
-        nrows=3, ncols=3, figsize=(3.2, 3),
+        nrows=3,
+        ncols=3,
+        figsize=(3.2, 3),
         fname="figures/1989.Profiles.png",
-        xlim=[1e-6, 1e-2], tylim=[-90, 90],
+        xlim=[1e-6, 1e-2],
+        tylim=[-90, 90],
         tyticks=[-90, -45, 0, 45, 90],
         aylim=[1e-3, 1e0],
         tag0_loc=[0, 3, 6],
         tag1_loc=[6, 7, 8],
-        tag2_loc=[2, 5, 8]
+        tag2_loc=[2, 5, 8],
     )
     return
 

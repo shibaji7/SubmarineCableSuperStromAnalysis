@@ -236,7 +236,8 @@ def compile(datafile=["data/1958/compiled.csv"]):
     )
     cable = create_from_lat_lon(
         segment_coordinates,
-        profiles, names=["CS-W", "DO-1", "DO-2", "MAR", "DO-3", "DO-4", "CS-E"]
+        profiles,
+        names=["CS-W", "DO-1", "DO-2", "MAR", "DO-3", "DO-4", "CS-E"],
     )
     model = SCUBASModel(
         cable_name="TAT-1",
