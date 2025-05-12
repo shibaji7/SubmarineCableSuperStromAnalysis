@@ -13,7 +13,9 @@ import pandas as pd
 from loguru import logger
 
 from bathymetry import BathymetryAnalysis
+from utils import create_from_lat_lon
 from utils import StackPlots
+from cable import SCUBASModel
 
 def read_dataset(base_path: str="data/1958/{x}[Eskdalemuir]-rescale-HR.csv") -> pd.DataFrame:
     """
@@ -112,15 +114,34 @@ def get_conductivity_profile(dSegments, segments, bth):
         p.layers[0].thickness = depth/1e3
     return profiles
 
-def compile_all_files():
+def compile(datafile = ["data/1958/compiled.csv"]):
     _ = read_dataset()
     bathymetry, segment_coordinates, segments = get_bathymetry()
-    segment_files = [["data/1958/compiled.csv"]]*len(segment_coordinates)
+    segment_files = [datafile]*len(segment_coordinates)
     profiles = get_conductivity_profile(
         segment_coordinates, segments, 
         bathymetry.bathymetry_data
     )
+    cable = create_from_lat_lon(
+        segment_coordinates, 
+        profiles, 
+    )
+    model = SCUBASModel(
+        cable_name="TAT-1",
+        cable_structure=cable,
+        segment_files=segment_files,
+    )
+    model.read_stations(["ESK"], [datafile])
+    model.initialize_TL()
+    model.run_cable_segment()
+
+    model.plot_TS_with_others(
+        fname="figures/1958.Scubas.png", 
+        date_lim=[dt.datetime(1958,2,10,16), dt.datetime(1958,2,11,8)],
+        fig_title="SCUBAS (Esk) / Time: UT since 16 UT on 10 Feb 1958",
+        text_size=10
+    )
     return
 
 if __name__ == "__main__":
-    compile_all_files()
+    compile()
