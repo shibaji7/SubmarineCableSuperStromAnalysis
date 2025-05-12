@@ -24,9 +24,8 @@ __status__ = "Research"
 import datetime as dt
 import os
 import sys
-sys.path.append("py/")
-from bathymetry import SubSeaCables
 
+sys.path.append("py/")
 import cartopy
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
@@ -34,6 +33,7 @@ import matplotlib.ticker as mticker
 import numpy
 import numpy as np
 import xarray as xr
+from bathymetry import SubSeaCables
 from cartopy.mpl.geoaxes import GeoAxes
 from cartopy.mpl.gridliner import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
 from descartes import PolygonPatch
@@ -259,7 +259,9 @@ class CartoBase(GeoAxes):
 register_projection(CartoBase)
 
 
-def create_bathymetrymap(cables=["TAT1"], colors=["m", "gold"], date=dt.datetime(1989, 3, 12)):
+def create_bathymetrymap(
+    cables=["TAT1"], colors=["m", "gold"], date=dt.datetime(1989, 3, 12)
+):
     ##############################################################
     # Download GEBCO data from https://www.gebco.net/data_and_products/gridded_bathymetry_data/
     #               and save it in the data/GEBCO_2024/ directory
@@ -312,7 +314,7 @@ def create_bathymetrymap(cables=["TAT1"], colors=["m", "gold"], date=dt.datetime
     im = ax.pcolormesh(
         da["lon"][::darray],
         da["lat"][::darray],
-        data/1e3,
+        data / 1e3,
         shading="auto",
         cmap="Blues_r",
         transform=ccrs.PlateCarree(),
@@ -344,26 +346,30 @@ def create_bathymetrymap(cables=["TAT1"], colors=["m", "gold"], date=dt.datetime
         transform=ax.transAxes,
         fontsize=8,
     )
-    for cbl, color  in zip(cables, colors):
-        cable = getattr(
-            SubSeaCables, cbl
-        )
+    for cbl, color in zip(cables, colors):
+        cable = getattr(SubSeaCables, cbl)
         ax.scatter(
             cable["Longitudes"],
-            cable["Latitudes"], 
-            marker="s", s=5,
+            cable["Latitudes"],
+            marker="s",
+            s=5,
             c=color,
             transform=ccrs.PlateCarree(),
         )
         ax.plot(
             cable["Longitudes"],
             cable["Latitudes"],
-            ls="-", lw=1.2, color="k",
+            ls="-",
+            lw=1.2,
+            color="k",
             transform=ccrs.PlateCarree(),
         )
     plt.savefig(
-        os.path.join("figures", "GEBCO_2024_Bathymetry.png"), dpi=300, bbox_inches="tight"
+        os.path.join("figures", "GEBCO_2024_Bathymetry.png"),
+        dpi=300,
+        bbox_inches="tight",
     )
+
 
 if __name__ == "__main__":
     create_bathymetrymap(["TAT1", "TAT8"])

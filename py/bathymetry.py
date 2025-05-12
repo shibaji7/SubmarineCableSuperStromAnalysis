@@ -1,9 +1,10 @@
+from types import SimpleNamespace
+
 import matplotlib.pyplot as plt  # type: ignore
+import numpy as np
 import pandas as pd  # type: ignore
 from geopy.distance import great_circle as GC  # type: ignore
 
-from types import SimpleNamespace
-import numpy as np
 
 def get_TAT1_segments(gtype="lat"):
     file_path = "data/1958/lat_long_bathymetry.csv"
@@ -46,6 +47,7 @@ def get_TAT1_segments(gtype="lat"):
     segment_coordinates = np.array(bathymetry.get_segment_coordinates())
     print(f"Segments>>, {segment_coordinates}")
     return segment_coordinates[:, 0] if gtype == "lat" else segment_coordinates[:, 1]
+
 
 class BathymetryAnalysis:
     """
@@ -172,13 +174,32 @@ class BathymetryAnalysis:
 SubSeaCables = SimpleNamespace(
     **dict(
         TAT8=dict(
-            Latitudes=[39.6, 38.79, 37.11, 39.80, 40.81, 43.15, 44.83, 46.51, 47.85, 50.79],
-            Longitudes=[-74.33, -72.62, -68.94, -48.20, -45.19, -39.16, -34.48, -22.43, -9.05, -4.55]
+            Latitudes=[
+                39.6,
+                38.79,
+                37.11,
+                39.80,
+                40.81,
+                43.15,
+                44.83,
+                46.51,
+                47.85,
+                50.79,
+            ],
+            Longitudes=[
+                -74.33,
+                -72.62,
+                -68.94,
+                -48.20,
+                -45.19,
+                -39.16,
+                -34.48,
+                -22.43,
+                -9.05,
+                -4.55,
+            ],
         ),
-        TAT1=dict(
-            Latitudes=get_TAT1_segments(),
-            Longitudes=get_TAT1_segments("lon")
-        )
+        TAT1=dict(Latitudes=get_TAT1_segments(), Longitudes=get_TAT1_segments("lon")),
     )
 )
 
