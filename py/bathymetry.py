@@ -4,7 +4,10 @@ import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd  # type: ignore
 from geopy.distance import great_circle as GC  # type: ignore
+from loguru import logger
 
+import os
+os.makedirs("figures/", exist_ok=True)
 
 def get_TAT1_segments(gtype="lat"):
     file_path = "data/1958/lat_long_bathymetry.csv"
@@ -15,7 +18,8 @@ def get_TAT1_segments(gtype="lat"):
         (60, 170),
         (170, 330),
         (330, 410),
-        (410, -1),
+        (410, 430),
+        (430, -1),
     ]
     colors = [
         "tab:blue",
@@ -94,7 +98,7 @@ class BathymetryAnalysis:
             ].iloc[i - 1]
         return
 
-    def plot_bathymetry(self, output_path, dpi=300, figsize=(5, 3)):
+    def plot_bathymetry(self, output_path, dpi=1000, figsize=(8, 3), names=[]):
         """
         Plot the bathymetry data with segments and save the figure.
 
@@ -111,28 +115,41 @@ class BathymetryAnalysis:
         # Plot the full bathymetry data
         ax.plot(
             self.bathymetry_data.distance / 1e3,
-            -1 * self.bathymetry_data["bathymetry.meters"],
+            -1 * self.bathymetry_data["bathymetry.meters"] / 1e3,
             color="k",
             lw=0.6,
         )
 
+        dist, depth = [], []
         # Plot each segment with a different color
         for i, seg in enumerate(self.segments):
             segment_data = self.bathymetry_data.iloc[seg[0] : seg[1]]
+            dist.append(segment_data.distance.tolist()[0] / 1e3)
+            depth.append(segment_data["bathymetry.meters"].mean() / 1e3)
             ax.plot(
                 segment_data.distance / 1e3,
-                -1 * segment_data["bathymetry.meters"],
+                -1 * segment_data["bathymetry.meters"] / 1e3,
                 marker=".",
                 ls="None",
                 ms=1.2,
                 color=self.colors[i],
             )
+            if len(names) == len(self.segments):
+                ax.text(
+                    segment_data.distance.mean() / 1e3,
+                    -(segment_data["bathymetry.meters"].mean() / 1e3) - 0.1,
+                    names[i],
+                    ha="center",
+                    va="top",
+                    rotation=90,
+                    fontdict=dict(size=10, color="b"),
+                )
 
             # Print initial and final coordinates of the segment
-            print(
+            logger.info(
                 f"Initial {segment_data.lat.round(2).iloc[0]},{segment_data.lon.round(2).iloc[0]}"
             )
-            print(
+            logger.info(
                 f"Final {segment_data.lat.round(2).iloc[-1]},{segment_data.lon.round(2).iloc[-1]}"
             )
 
@@ -140,6 +157,18 @@ class BathymetryAnalysis:
             self.segment_coordinates.append(
                 [segment_data.lat.round(2).iloc[0], segment_data.lon.round(2).iloc[0]]
             )
+        dist.append(self.bathymetry_data.distance.iloc[-1] / 1e3)
+        depth.append(self.bathymetry_data["bathymetry.meters"].iloc[-1] / 1e3)
+        depth = np.array(depth)
+        depth[depth > 0] = depth[depth > 0] * -1
+        ax.step(
+            dist,
+            depth,
+            where="post",
+            ls="-",
+            lw=1.5,
+            color="k",
+        )
 
         # Append the final coordinate of the last segment
         self.segment_coordinates.append(
@@ -150,11 +179,13 @@ class BathymetryAnalysis:
         ax.set_xticks(
             [0, 500, 1000, 2000, 3000, 1e-3 * self.bathymetry_data.distance.iloc[-1]]
         )
-        ax.set_xlabel("Distance in km")
+        ax.set_xlabel("Distance, km")
         ax.set_xlim(0, 1e-3 * self.bathymetry_data.distance.iloc[-1])
         ax.axhline(0, ls="--", lw=0.4, color="b", alpha=0.7)
-        ax.set_ylim(-5000, 500)
-        ax.set_ylabel("Depths, m")
+        ax.set_ylim(-5, 0.5)
+        ax.set_yticks([-5, -4, -3, -2, -1, -0.5])
+        ax.set_yticklabels([5, 4, 3, 2, 1, 0.5])
+        ax.set_ylabel("Depths, km")
 
         # Save the figure
         fig.savefig(output_path, bbox_inches="tight", dpi=dpi)

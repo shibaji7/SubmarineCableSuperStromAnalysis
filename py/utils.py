@@ -27,6 +27,7 @@ class StackPlots:
         polar: bool = False,
         figsize: tuple = (8, 3),
         text_size=15,
+        sharex=True,
     ):
         mpl.rc("font", size=text_size)
         self.nrows = nrows
@@ -35,7 +36,7 @@ class StackPlots:
             self.nrows,
             self.ncols,
             figsize=(self.ncols * figsize[0], self.nrows * figsize[1]),
-            sharex=True,
+            sharex=sharex,
             dpi=dpi,
             subplot_kw={"projection": "polar"} if polar else {},
         )
@@ -97,6 +98,72 @@ class StackPlots:
         if text:
             ax.text(0.05, 1.05, text, ha="left", va="center", transform=ax.transAxes)
         return self.fig, ax
+
+    def plot_stack_scatter(
+        self,
+        time: Sequence,
+        value: Sequence,
+        title: Optional[str] = None,
+        xlabel: Optional[str] = None,
+        ylabel: Optional[str] = None,
+        label: Optional[str] = None,
+        text: Optional[str] = None,
+        ylim: Optional[Sequence] = None,
+        xlim: Optional[Sequence] = None,
+        color: str = "blue",
+        ms: float = 0.8,
+        ax: Optional[plt.Axes] = None,
+        ylabel_color: Optional[str] = "k",
+        interval: Optional[int] = 15,
+    ) -> tuple:
+        """
+        Plot a stack of plots with the given time and value data.
+        :param time: Time data for the x-axis
+        :param value: Value data for the y-axis
+        :param title: Title for the plot
+        :param xlabel: Label for the x-axis
+        :param ylabel: Label for the y-axis
+        """
+        if self.plot_id > len(self.axes):
+            raise ValueError("No more axes available for plotting.")
+        if ax is None:
+            ax = self.axes[self.plot_id]
+            self.plot_id += 1
+        if title:
+            ax.set_title(title, fontdict=dict(size=12))
+        if xlabel:
+            ax.set_xlabel(xlabel)
+        if ylabel:
+            ax.set_ylabel(ylabel, color=ylabel_color)
+        if ylim:
+            ax.set_ylim(ylim)
+        else:
+            ax.set_ylim([min(value), max(value)])
+        if xlim:
+            ax.set_xlim(xlim)
+        else:
+            ax.set_xlim([time[0], time[-1]])
+        if self.datetime:
+            ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=interval))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("$%H^{%M}$"))
+        ax.plot(time, value, "." + color, ms=ms, label=label)
+        if text:
+            ax.text(0.05, 1.05, text, ha="left", va="center", transform=ax.transAxes)
+        return self.fig, ax
+
+    def add_xyline(self, ax):
+        x_limits = ax.get_xlim()
+        y_limits = ax.get_ylim()
+        min_val = min(x_limits[0], y_limits[0])
+        max_val = max(x_limits[1], y_limits[1])
+        ax.plot(
+            [min_val, max_val],
+            [min_val, max_val],
+            color="k",
+            linestyle="--",
+            linewidth=0.8,
+        )
+        return
 
     def save_fig(self, filename: str):
         """
@@ -253,7 +320,9 @@ def create_from_lat_lon(
     return cable
 
 
-def get_cable_informations(kind="TAT-8", width=1.0, flim=[1e-6, 1e0]):
+def get_cable_informations(
+    kind="TAT-8", width=1.0, flim=[1e-6, 1e0], wtr_depths=dict()
+):
     if kind == "TAT-8":
         land50 = PROFILES.CS_E
         land50.layers[0].thickness = 50
@@ -264,7 +333,11 @@ def get_cable_informations(kind="TAT-8", width=1.0, flim=[1e-6, 1e0]):
                         initial=dict(lat=39.6, lon=-74.33),
                         final=dict(lat=38.79, lon=-72.62),
                         sec_id="CS-W",
-                        site=PROFILES.CS_W,
+                        site=(
+                            PROFILES.CS_W.set_thicknesses(wtr_depths["CS_W"])
+                            if "CS_W" in wtr_depths
+                            else PROFILES.CS_W
+                        ),
                         active_termination=dict(
                             right=None,
                             left=PROFILES.LD,
@@ -274,7 +347,11 @@ def get_cable_informations(kind="TAT-8", width=1.0, flim=[1e-6, 1e0]):
                         initial=dict(lat=38.79, lon=-72.62),
                         final=dict(lat=37.11, lon=-68.94),
                         sec_id="DO-1",
-                        site=PROFILES.DO_1,
+                        site=(
+                            PROFILES.DO_1.set_thicknesses(wtr_depths["DO_1"])
+                            if "DO_1" in wtr_depths
+                            else PROFILES.DO_1
+                        ),
                         active_termination=dict(
                             right=None,
                             left=None,
@@ -284,7 +361,11 @@ def get_cable_informations(kind="TAT-8", width=1.0, flim=[1e-6, 1e0]):
                         initial=dict(lat=37.11, lon=-68.94),
                         final=dict(lat=39.80, lon=-48.20),
                         sec_id="DO-2",
-                        site=PROFILES.DO_2,
+                        site=(
+                            PROFILES.DO_2.set_thicknesses(wtr_depths["DO_2"])
+                            if "DO_2" in wtr_depths
+                            else PROFILES.DO_2
+                        ),
                         active_termination=dict(
                             right=None,
                             left=None,
@@ -324,7 +405,11 @@ def get_cable_informations(kind="TAT-8", width=1.0, flim=[1e-6, 1e0]):
                         initial=dict(lat=44.83, lon=-34.48),
                         final=dict(lat=46.51, lon=-22.43),
                         sec_id="MAR",
-                        site=PROFILES.MAR,
+                        site=(
+                            PROFILES.MAR.set_thicknesses(wtr_depths["MAR"])
+                            if "MAR" in wtr_depths
+                            else PROFILES.MAR
+                        ),
                         active_termination=dict(
                             right=None,
                             left=None,
@@ -498,3 +583,51 @@ def read_Bfield_data(files, return_xyzf=True, csv_file_date_name="Date"):
             o.index.name = "Date"
         Bfield = pd.concat([Bfield, o])
     return Bfield
+
+
+def load_omni(dates, res=1):
+    import pyomnidata
+
+    os.environ["OMNIDATA_PATH"] = "/home/chakras4/OMNI/"
+    logger.info(f"OMNIDATA_PATH: {os.environ['OMNIDATA_PATH']}")
+    pyomnidata.UpdateLocalData()
+    omni = pd.DataFrame(pyomnidata.GetOMNI(dates[0].year, Res=res))
+    omni["time"] = omni.apply(
+        lambda r: (
+            dt.datetime(
+                int(str(r.Date)[:4]),
+                int(str(r.Date)[4:6]),
+                int(str(r.Date)[6:].replace(".0", "")),
+            )
+            + dt.timedelta(hours=r.ut)
+        ),
+        axis=1,
+    )
+    omni = omni[(omni.time >= dates[0]) & (omni.time <= dates[1])]
+    return omni
+
+
+def quantile_loss(y_true, y_pred, quantile):
+    residuals = y_true - y_pred
+    loss = np.where(residuals >= 0, quantile * residuals, (1 - quantile) * -residuals)
+    return np.mean(loss)
+
+
+def huber_loss(y_true, y_pred, delta):
+    residuals = y_true - y_pred
+    huber_loss_values = np.where(
+        np.abs(residuals) <= delta,
+        0.5 * residuals**2,
+        delta * (np.abs(residuals) - 0.5 * delta),
+    )
+    return huber_loss_values
+
+
+def theils_u1(y_true, y_pred):
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+
+    numerator = np.sqrt(np.mean((y_true - y_pred) ** 2))
+    denominator = np.sqrt(np.mean(y_true**2)) + np.sqrt(np.mean(y_pred**2))
+
+    return numerator / denominator if denominator != 0 else np.nan
