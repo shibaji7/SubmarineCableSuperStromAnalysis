@@ -85,13 +85,14 @@ def read_dataset(
     )
     data = (
         data.set_index("Time")
-        .resample("1s")
+        .resample("10s")
         .asfreq()
         .interpolate(method="cubic")
         .reset_index()
     )
     data["F"] = np.sqrt(data.X**2 + data.Y**2 + data.Z**2)
-    data = data[data.Time < dt.datetime(1958, 2, 11, 7, 59)]
+    data.Time = data.Time - dt.timedelta(minutes=6)
+    data = data[data.Time < data.Time.iloc[-1]-dt.timedelta(minutes=2)]
 
     # Save processed data
     data = data.rename(columns=dict(Time="Date"))
@@ -107,7 +108,7 @@ def read_dataset(
         data.X - np.median(data.X.iloc[:60]),
         ylim=[-1500, 1500],
         label=r"$B_x$",
-        xlim=[dt.datetime(1958, 2, 10, 11), dt.datetime(1958, 2, 11, 8)],
+        xlim=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 5)],
     )
     sp.plot_stack_plots(
         data.Date,
@@ -115,7 +116,8 @@ def read_dataset(
         ylim=[-1500, 1500],
         label=r"$B_y$",
         color="r",
-        xlim=[dt.datetime(1958, 2, 10, 11), dt.datetime(1958, 2, 11, 8)],
+        xlim=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 5)],
+        interval=1,
         ax=ax,
     )
     sp.plot_stack_plots(
@@ -126,7 +128,8 @@ def read_dataset(
         xlabel="Time, UT since 16 UT on 10 Feb 1958",
         color="k",
         ylabel=r"$B_{esk}$, nT",
-        xlim=[dt.datetime(1958, 2, 10, 16), dt.datetime(1958, 2, 11, 8)],
+        xlim=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 5)],
+        interval=1,
         ax=ax,
     )
     ax.legend(loc=2, fontsize=12)
@@ -219,6 +222,12 @@ def get_conductivity_profile(dSegments, segments, bth):
     return profiles
 
 
+def load_extracted_voltage(fname="data/1958/Voltage/TAT1Volt-rescale.csv"):
+    # TAT1Volt-rescale.csv
+    data = pd.read_csv(fname, parse_dates=["Time"])
+    return data
+
+
 def compile_1958(datafile=["data/1958/compiled.csv"]):
     """
     Main function to run the SCUBAS model for the 1958 superstorm.
@@ -285,7 +294,188 @@ def compile_1958(datafile=["data/1958/compiled.csv"]):
         component="Y",
         groups=[[0, 1, 2], [3, 4, 5], [6, 7]],
     )
+    obs = load_extracted_voltage()
+    model.plot_zoomedin_analysis(
+        fname="figures/1958/1958.Scubas.Compare.png",
+        inputs=obs,
+        date_lims=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)],
+        ylim=[-3000, 3000],
+        interval=30, mult=1
+    )
+    run_detailed_error_analysis(
+        inputs=obs, cable=model.cable,
+        date_lims=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)],
+        fnames=[
+            "figures/1958/1958.Error.qq.png",
+        ]
+    )
     return model, cable
+
+def run_detailed_error_analysis(
+    inputs, cable, date_lims=[], 
+    fnames=[
+        "figures/1958/1958.Error.qq.png",
+    ]
+):
+    # Case special
+    x = np.array(inputs.Voltage)
+    o = cable.tot_params.copy()
+    o = o[
+        (o.index >= date_lims[0] - dt.timedelta(minutes=10))
+        & (o.index <= date_lims[1] + dt.timedelta(minutes=10))
+    ]["Vt(v)"]
+    dT = np.array((o.index - o.index[0]).total_seconds())
+    inputs["newdT"] = inputs.Time.apply(lambda j: (j - o.index[0]).total_seconds())
+    y = np.interp(inputs.newdT, dT, -np.array(o))
+    e = y - x  # Error Pred - Obs
+
+
+    sp = StackPlots(nrows=2, ncols=2, figsize=(4, 2.5), sharex=False, text_size=12)
+    ax = sp.axes[0]
+    ax.hist(e, 50, color="b", histtype="step")
+    ax.set_xlabel("Error, V", fontsize=12)
+    ax.set_ylabel("Counts", fontsize=12)
+    ax.tick_params(axis="x", labelsize=12)
+    ax.set_xlim(-3000, 3000)
+    ax.tick_params(axis="y", labelsize=12)
+    ax.text(
+        0.05,
+        0.9,
+        "(A)",
+        ha="left",
+        va="center",
+        transform=ax.transAxes,
+        fontsize=12,
+    )
+
+    ax = sp.axes[1]
+    ax.set_xlim([-3000, 3000])
+    ax.set_ylim([-3000, 3000])
+    from verify.plot import qqPlot
+
+    qqPlot(
+        y,
+        x,
+        modelName="SCUBAS",
+        addTo=sp.axes[1],
+        plot_kwargs=dict(
+            c="b",
+            marker="s",
+            s=4,
+        ),
+    )
+    ax.set_title("")
+    ax.text(
+        0.05,
+        0.9,
+        "(B) QQ Plot",
+        ha="left",
+        va="center",
+        transform=ax.transAxes,
+        fontsize=12,
+    )
+    ax.set_xlabel("Predicted, V", fontsize=12)
+    ax.set_ylabel("Observed, V", fontsize=12)
+    ax.tick_params(axis="x", labelsize=12)
+    ax.tick_params(axis="y", labelsize=12)
+
+    ax = sp.axes[2]
+    ax.scatter(
+        x,
+        e,
+        c="b",
+        marker="s",
+        s=4,
+    )
+    ax.set_xlabel("Observed, V", fontsize=12)
+    ax.set_xlim(-3000, 3000)
+    ax.set_ylim(-3000, 3000)
+    ax.set_ylabel("Error, V", fontsize=12)
+    ax.text(
+        0.05,
+        0.9,
+        "(C) Residue",
+        ha="left",
+        va="center",
+        transform=ax.transAxes,
+        fontsize=12,
+    )
+    ax.axhline(0, color="k", lw=0.8, ls="--")
+
+    # Compute Scores (huber, quantile, expctile) and Isotonic fits
+    from scores.processing.isoreg_impl import isotonic_fit
+    iso_fit_result = isotonic_fit(
+        fcst=y, obs=x, functional="mean", bootstraps=100, confidence_level=0.95
+    )
+    # Data
+    x_sorted = iso_fit_result["fcst_sorted"]
+    y_lower = iso_fit_result["confidence_band_lower_values"]
+    y_upper = iso_fit_result["confidence_band_upper_values"]
+    y_reg = iso_fit_result["regression_values"]
+    weights = iso_fit_result["fcst_counts"]
+
+    # Bounds
+    total_min = min(np.min(x_sorted), np.min(y_lower))
+    total_max = max(np.max(x_sorted), np.max(y_upper))
+
+    # Histogram data
+    bins = np.linspace(np.min(x_sorted), np.max(x_sorted), 11)
+
+    ax = sp.axes[3]
+    # Confidence band (shaded region)
+    ax.fill_between(
+        x_sorted,
+        y_lower,
+        y_upper,
+        color="lightblue",
+        alpha=0.5,
+        label="95% confidence band",
+    )
+
+    # Diagonal reference line
+    ax.plot([total_min, total_max], [total_min, total_max], "k--")
+
+    # Regression line
+    ax.plot(x_sorted, y_reg, color="b")
+
+    # Histogram (on secondary y-axis)
+    ax_hist = ax.twinx()
+    ax_hist.set_xlim(-3000, 3000)
+    ax_hist.set_ylim(0, 100)
+    ax_hist.hist(x_sorted, color="purple", histtype="step")
+    ax_hist.set_ylabel("Counts", color="purple")
+
+    # Annotations
+    ax.set_xlim(-3000, 3000)
+    ax.set_ylim(-3000, 3000)
+    ax.set_xlabel("Predicted, V")
+    ax.set_ylabel("Observed, V", color="b")
+    ax.text(
+        0.05,
+        0.95,
+        "underprediction",
+        ha="left",
+        va="top",
+        transform=ax.transAxes,
+        fontsize=8,
+        rotation=90,
+        color="r",
+    )
+    ax.text(
+        0.95,
+        0.05,
+        "overprediction",
+        ha="right",
+        va="bottom",
+        transform=ax.transAxes,
+        fontsize=8,
+        rotation=90,
+        color="r",
+    )
+    ax.text(0.3, 0.9, "(D)", ha="left", va="center", transform=ax.transAxes)
+    sp.save_fig(fnames[0])
+    sp.close()
+    return
 
 
 if __name__ == "__main__":

@@ -247,7 +247,7 @@ class SCUBASModel(object):
         sp.close()
         return
 
-    def plot_zoomedin_analysis(self, fname, inputs, ylim=[], date_lims=[], interval=15):
+    def plot_zoomedin_analysis(self, fname, inputs, ylim=[], date_lims=[], interval=15, mult=-1):
         # All in pyforcast tools or SCORES
         sp = StackPlots(
             nrows=1,
@@ -270,7 +270,7 @@ class SCUBASModel(object):
         )
         sp.plot_stack_scatter(
             self.cable.tot_params.index,
-            -self.cable.tot_params["Vt(v)"],
+            mult*self.cable.tot_params["Vt(v)"],
             color="r",
             ms=2,
             label=rf"SCUBAS",
@@ -285,7 +285,13 @@ class SCUBASModel(object):
         sp.close()
         return
 
-    def run_detailed_error_analysis(self, inputs, date_lims=[]):
+    def run_detailed_error_analysis(
+        self, inputs, date_lims=[], 
+        fnames=[
+            "figures/1989/1989.Error.qq.png",
+            "figures/1989/1989.Scores.png",
+        ]
+    ):
         omni = load_omni(date_lims)
         omni = omni[(omni.time >= date_lims[0]) & (omni.time <= date_lims[1])]
         # Case special
@@ -399,7 +405,7 @@ class SCUBASModel(object):
             fontsize=12,
         )
         # print(omni.SymH.min(), omni.SymH.max(), symhNew.min(), symhNew.max())
-        sp.save_fig("figures/1989/1989.Error.qq.png")
+        sp.save_fig(fnames[0])
         sp.close()
 
         # Compute Scores (huber, quantile, expctile) and Isotonic fits
@@ -489,6 +495,6 @@ class SCUBASModel(object):
         ax.set_ylabel("Q-Loss")
         ax.text(0.3, 0.9, "(B)", ha="left", va="center", transform=ax.transAxes)
 
-        sp.save_fig("figures/1989/1989.Scores.png")
+        sp.save_fig(fnames[1])
         sp.close()
         return
