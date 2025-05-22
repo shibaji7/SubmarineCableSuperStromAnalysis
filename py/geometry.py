@@ -274,7 +274,7 @@ def create_bathymetrymap(
     path_data = os.path.join(path_root, "data/GEBCO_2024/")
     da = xr.open_dataset(os.path.join(path_data, "GEBCO_2024.nc"))
 
-    extent = [-80, -5, 20, 60]
+    extent = [-80, -5, 30, 60]
     darray = 20
     ## matplotlib work by initialising a matplotlib figure
     ## then you define additional attributes to the figure, like adding data, labels, colors, whatever
@@ -307,8 +307,8 @@ def create_bathymetrymap(
     gl.xformatter = LONGITUDE_FORMATTER
     gl.yformatter = LATITUDE_FORMATTER
     gl.n_steps = 90
-    ax.mark_latitudes(plt_lats, fontsize="small", color="red")
-    ax.mark_longitudes(mark_lons, fontsize="small", color="red")
+    ax.mark_latitudes(plt_lats, fontsize="small", color="k")
+    ax.mark_longitudes(mark_lons, fontsize="small", color="k")
     data = da["elevation"][::darray, ::darray]
     data = np.ma.masked_where(data >= 0, data)
     im = ax.pcolormesh(
@@ -321,7 +321,7 @@ def create_bathymetrymap(
         vmax=1,
         vmin=-5,
     )
-    cax = fig.add_axes([0.15, -0.01, 0.3, 0.03])
+    cax = fig.add_axes([0.15, 0.15, 0.3, 0.03])
     cb = fig.colorbar(im, cax=cax, orientation="horizontal")
     cb.set_label("Bathymetry, km")
     ax.set_extent(extent, crs=cartopy.crs.PlateCarree())
@@ -340,7 +340,7 @@ def create_bathymetrymap(
     ax.text(
         0.05,
         1.05,
-        (f"{date_string(date)}"),
+        "",#(f"{date_string(date)}"),
         ha="left",
         va="center",
         transform=ax.transAxes,
@@ -364,9 +364,64 @@ def create_bathymetrymap(
             color="k",
             transform=ccrs.PlateCarree(),
         )
+        for j in range(len(cable["Longitudes"])-1):
+            ax.text(
+                (cable["Longitudes"][j] + cable["Longitudes"][j + 1]) / 2,
+                1+ ((cable["Latitudes"][j] + cable["Latitudes"][j + 1]) / 2),
+                j+1,
+                ha="center",
+                va="center",
+                transform=ccrs.PlateCarree(),
+                fontsize=8, fontdict={"weight": "bold", "color": color},
+            )
+    ax.scatter(
+        [-77.4588, -52.7453, 355.516, -3.1757], [38.3004, 47.5556, 50.995,55.2678],
+        marker="D",
+        s=5,
+        c="k",
+        transform=ccrs.PlateCarree(),
+    )
+    ax.text(
+        -77.4588,
+        1 + 38.3004,
+        "FRD",
+        ha="center",
+        va="bottom",
+        transform=ccrs.PlateCarree(),
+        fontsize=8, fontdict={"color": "k"},
+        rotation=90,
+    )
+    ax.text(
+        -3.1757,
+        50.995-2,
+        "HAD",
+        ha="center",
+        va="bottom",
+        transform=ccrs.PlateCarree(),
+        fontsize=8, fontdict={"color": "k"},
+        rotation=60,
+    )
+    ax.text(
+        355.516,
+        55.2678-2,
+        "ESK",
+        ha="center",
+        va="bottom",
+        transform=ccrs.PlateCarree(),
+        fontsize=8, fontdict={"color": "k"},
+    )
+    ax.text(
+        -52.7453,
+        47.5556-3,
+        "STJ",
+        ha="center",
+        va="bottom",
+        transform=ccrs.PlateCarree(),
+        fontsize=8, fontdict={"color": "k"},
+    )
     plt.savefig(
         os.path.join("figures", "GEBCO_2024_Bathymetry.png"),
-        dpi=300,
+        dpi=1000,
         bbox_inches="tight",
     )
 
