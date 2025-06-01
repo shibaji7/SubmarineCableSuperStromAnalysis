@@ -47,6 +47,7 @@ station_maps = dict(
 scale_stj = 1
 
 import os
+
 os.makedirs("figures/1989/", exist_ok=True)
 
 

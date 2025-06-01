@@ -38,7 +38,9 @@ station_maps = dict(
     ],
 )
 import os
+
 os.makedirs("figures/2024/SMAG-fit/", exist_ok=True)
+
 
 def read_dataset() -> pd.DataFrame:
     """

@@ -24,6 +24,7 @@ Date: [Update Date]
 """
 
 import datetime as dt
+import os
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -32,7 +33,6 @@ from cable import SCUBASModel
 from loguru import logger  # type: ignore
 from utils import StackPlots, create_from_lat_lon
 
-import os
 os.makedirs("figures/1958/", exist_ok=True)
 
 
@@ -92,7 +92,7 @@ def read_dataset(
     )
     data["F"] = np.sqrt(data.X**2 + data.Y**2 + data.Z**2)
     data.Time = data.Time - dt.timedelta(minutes=6)
-    data = data[data.Time < data.Time.iloc[-1]-dt.timedelta(minutes=2)]
+    data = data[data.Time < data.Time.iloc[-1] - dt.timedelta(minutes=2)]
 
     # Save processed data
     data = data.rename(columns=dict(Time="Date"))
@@ -218,7 +218,7 @@ def get_conductivity_profile(dSegments, segments, bth):
     for p, seg in zip(profiles, segments):
         o = bth.iloc[seg[0] : seg[1]]
         depth = np.median(o["bathymetry.meters"])
-        p.layers[0].thickness = depth / 1e3 # in meters
+        p.layers[0].thickness = depth / 1e3  # in meters
     return profiles
 
 
@@ -274,7 +274,8 @@ def compile_1958(datafile=["data/1958/compiled.csv"]):
         xlim=[1e-6, 1e-2],
         tylim=[-90, 90],
         tyticks=[-90, -45, 0, 45, 90],
-        aylim=[1e-3, 1e0], t_mul=1.,
+        aylim=[1e-3, 1e0],
+        t_mul=1.0,
     )
     model.plot_e_fields(
         fname="figures/1958/1958.Scubas.Exfield.png",
@@ -300,22 +301,27 @@ def compile_1958(datafile=["data/1958/compiled.csv"]):
         inputs=obs,
         date_lims=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)],
         ylim=[-3000, 3000],
-        interval=30, mult=1
+        interval=30,
+        mult=1,
     )
     run_detailed_error_analysis(
-        inputs=obs, cable=model.cable,
+        inputs=obs,
+        cable=model.cable,
         date_lims=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)],
         fnames=[
             "figures/1958/1958.Error.qq.png",
-        ]
+        ],
     )
     return model, cable
 
+
 def run_detailed_error_analysis(
-    inputs, cable, date_lims=[], 
+    inputs,
+    cable,
+    date_lims=[],
     fnames=[
         "figures/1958/1958.Error.qq.png",
-    ]
+    ],
 ):
     # Case special
     x = np.array(inputs.Voltage)
@@ -328,7 +334,6 @@ def run_detailed_error_analysis(
     inputs["newdT"] = inputs.Time.apply(lambda j: (j - o.index[0]).total_seconds())
     y = np.interp(inputs.newdT, dT, -np.array(o))
     e = y - x  # Error Pred - Obs
-
 
     sp = StackPlots(nrows=2, ncols=2, figsize=(4, 2.5), sharex=False, text_size=12)
     ax = sp.axes[0]
@@ -404,6 +409,7 @@ def run_detailed_error_analysis(
 
     # Compute Scores (huber, quantile, expctile) and Isotonic fits
     from scores.processing.isoreg_impl import isotonic_fit
+
     iso_fit_result = isotonic_fit(
         fcst=y, obs=x, functional="mean", bootstraps=100, confidence_level=0.95
     )

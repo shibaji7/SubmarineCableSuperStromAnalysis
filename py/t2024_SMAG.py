@@ -15,13 +15,12 @@ station_maps = dict(
     STJ=[
         "data/2024/SMAG/stj20240510psec.sec.csv",
     ],
-    HAD=[
-        "data/2024/SMAG/had20240510psec.sec.csv"
-    ],
+    HAD=["data/2024/SMAG/had20240510psec.sec.csv"],
 )
 scale_stj = 1
 
 import os
+
 os.makedirs("figures/2024/SMAG/", exist_ok=True)
 
 

@@ -96,7 +96,7 @@ class SCUBASModel(object):
         )
         _, ax = sp.plot_stack_plots(
             self.cable.tot_params.index,
-            self.cable.tot_params["Vt(v)"],
+            -self.cable.tot_params["Vt(v)"],
             ylim=ylim,
             xlim=date_lim,
             title=fig_title,
@@ -124,9 +124,9 @@ class SCUBASModel(object):
         tag0_loc=[0, 2, 4, 6],
         tag1_loc=[6, 5],
         tag2_loc=[1, 3, 5],
-        t_mul=1.,
+        t_mul=1.0,
     ):
-        if t_mul == 1.:
+        if t_mul == 1.0:
             self.initialize_TL(1e3)
             t_mul = 1e-3
         sp = StackPlots(
@@ -175,7 +175,7 @@ class SCUBASModel(object):
             ax.text(
                 0.05,
                 0.95,
-                rf"{id}, $\tau_w$=%.2f km" % (water_depth*t_mul),
+                rf"{id}, $\tau_w$=%.2f km" % (water_depth * t_mul),
                 ha="left",
                 va="center",
                 transform=ax.transAxes,
@@ -247,7 +247,9 @@ class SCUBASModel(object):
         sp.close()
         return
 
-    def plot_zoomedin_analysis(self, fname, inputs, ylim=[], date_lims=[], interval=15, mult=-1):
+    def plot_zoomedin_analysis(
+        self, fname, inputs, ylim=[], date_lims=[], interval=15, mult=-1
+    ):
         # All in pyforcast tools or SCORES
         sp = StackPlots(
             nrows=1,
@@ -270,7 +272,7 @@ class SCUBASModel(object):
         )
         sp.plot_stack_scatter(
             self.cable.tot_params.index,
-            mult*self.cable.tot_params["Vt(v)"],
+            mult * self.cable.tot_params["Vt(v)"],
             color="r",
             ms=2,
             label=rf"SCUBAS",
@@ -286,11 +288,13 @@ class SCUBASModel(object):
         return
 
     def run_detailed_error_analysis(
-        self, inputs, date_lims=[], 
+        self,
+        inputs,
+        date_lims=[],
         fnames=[
             "figures/1989/1989.Error.qq.png",
             "figures/1989/1989.Scores.png",
-        ]
+        ],
     ):
         omni = load_omni(date_lims)
         omni = omni[(omni.time >= date_lims[0]) & (omni.time <= date_lims[1])]

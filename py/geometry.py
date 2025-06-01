@@ -25,7 +25,11 @@ import datetime as dt
 import os
 import sys
 
+import pandas as pd
+
 sys.path.append("py/")
+import math
+
 import cartopy
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
@@ -39,6 +43,27 @@ from cartopy.mpl.gridliner import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
 from descartes import PolygonPatch
 from matplotlib.projections import register_projection
 from shapely.geometry import LineString, MultiLineString, Polygon, mapping
+
+
+def calculate_bearing(pointA, pointB):
+    """
+    Calculate the azimuth (initial bearing) from pointA to pointB.
+    Inputs are (lat, lon) tuples.
+    Returns bearing in degrees from North.
+    """
+    lat1 = math.radians(pointA[0])
+    lat2 = math.radians(pointB[0])
+    diffLong = math.radians(pointB[1] - pointA[1])
+
+    x = math.sin(diffLong) * math.cos(lat2)
+    y = math.cos(lat1) * math.sin(lat2) - (
+        math.sin(lat1) * math.cos(lat2) * math.cos(diffLong)
+    )
+    initial_bearing = math.atan2(x, y)
+
+    # Convert radians to degrees and normalize to 0–360°
+    bearing = (math.degrees(initial_bearing) + 360) % 360
+    return bearing
 
 
 def setsize(size=6):
@@ -259,8 +284,13 @@ class CartoBase(GeoAxes):
 register_projection(CartoBase)
 
 
-def create_bathymetrymap(
-    cables=["TAT1"], colors=["m", "gold"], date=dt.datetime(1989, 3, 12)
+def create_new_pane(
+    date,
+    extent=[-80, -5, 30, 60],
+    central_longitude=-70,
+    central_latitude=0.30,
+    darray=20,
+    cx=[0.15, 0.15, 0.3, 0.03],
 ):
     ##############################################################
     # Download GEBCO data from https://www.gebco.net/data_and_products/gridded_bathymetry_data/
@@ -274,8 +304,6 @@ def create_bathymetrymap(
     path_data = os.path.join(path_root, "data/GEBCO_2024/")
     da = xr.open_dataset(os.path.join(path_data, "GEBCO_2024.nc"))
 
-    extent = [-80, -5, 30, 60]
-    darray = 20
     ## matplotlib work by initialising a matplotlib figure
     ## then you define additional attributes to the figure, like adding data, labels, colors, whatever
 
@@ -283,8 +311,8 @@ def create_bathymetrymap(
     fig = plt.figure(figsize=(4, 4), dpi=300)
 
     proj = cartopy.crs.Stereographic(
-        central_longitude=-70,
-        central_latitude=0.30,
+        central_longitude=central_longitude,
+        central_latitude=central_latitude,
     )
     # this creats a 'geoaxes' object and sets the projection to a cool looking orthographic projection
     ax = fig.add_subplot(
@@ -321,8 +349,8 @@ def create_bathymetrymap(
         vmax=1,
         vmin=-5,
     )
-    cax = fig.add_axes([0.15, 0.15, 0.3, 0.03])
-    cb = fig.colorbar(im, cax=cax, orientation="horizontal")
+    cax = fig.add_axes(cx)
+    cb = fig.colorbar(im, cax=cax)
     cb.set_label("Bathymetry, km")
     ax.set_extent(extent, crs=cartopy.crs.PlateCarree())
     ax.overaly_coast_lakes(lw=0.4, alpha=0.4)
@@ -340,12 +368,19 @@ def create_bathymetrymap(
     ax.text(
         0.05,
         1.05,
-        "",#(f"{date_string(date)}"),
+        "",  # (f"{date_string(date)}"),
         ha="left",
         va="center",
         transform=ax.transAxes,
         fontsize=8,
     )
+    return fig, ax
+
+
+def create_bathymetrymap_NA(
+    cables=["TAT1"], colors=["m", "gold"], date=dt.datetime(1989, 3, 12)
+):
+    fig, ax = create_new_pane(date, extent=[-80, -5, 30, 60], darray=20)
     for cbl, color in zip(cables, colors):
         cable = getattr(SubSeaCables, cbl)
         ax.scatter(
@@ -364,18 +399,20 @@ def create_bathymetrymap(
             color="k",
             transform=ccrs.PlateCarree(),
         )
-        for j in range(len(cable["Longitudes"])-1):
+        for j in range(len(cable["Longitudes"]) - 1):
             ax.text(
                 (cable["Longitudes"][j] + cable["Longitudes"][j + 1]) / 2,
-                1+ ((cable["Latitudes"][j] + cable["Latitudes"][j + 1]) / 2),
-                j+1,
+                1 + ((cable["Latitudes"][j] + cable["Latitudes"][j + 1]) / 2),
+                j + 1,
                 ha="center",
                 va="center",
                 transform=ccrs.PlateCarree(),
-                fontsize=8, fontdict={"weight": "bold", "color": color},
+                fontsize=8,
+                fontdict={"weight": "bold", "color": color},
             )
     ax.scatter(
-        [-77.4588, -52.7453, 355.516, -3.1757], [38.3004, 47.5556, 50.995,55.2678],
+        [-77.4588, -52.7453, 355.516, -3.1757],
+        [38.3004, 47.5556, 50.995, 55.2678],
         marker="D",
         s=5,
         c="k",
@@ -388,43 +425,255 @@ def create_bathymetrymap(
         ha="center",
         va="bottom",
         transform=ccrs.PlateCarree(),
-        fontsize=8, fontdict={"color": "k"},
+        fontsize=8,
+        fontdict={"color": "k"},
         rotation=90,
     )
     ax.text(
         -3.1757,
-        50.995-2,
+        50.995 - 2,
         "HAD",
         ha="center",
         va="bottom",
         transform=ccrs.PlateCarree(),
-        fontsize=8, fontdict={"color": "k"},
+        fontsize=8,
+        fontdict={"color": "k"},
         rotation=60,
     )
     ax.text(
         355.516,
-        55.2678-2,
+        55.2678 - 2,
         "ESK",
         ha="center",
         va="bottom",
         transform=ccrs.PlateCarree(),
-        fontsize=8, fontdict={"color": "k"},
+        fontsize=8,
+        fontdict={"color": "k"},
     )
     ax.text(
         -52.7453,
-        47.5556-3,
+        47.5556 - 3,
         "STJ",
         ha="center",
         va="bottom",
         transform=ccrs.PlateCarree(),
-        fontsize=8, fontdict={"color": "k"},
+        fontsize=8,
+        fontdict={"color": "k"},
     )
     plt.savefig(
-        os.path.join("figures", "GEBCO_2024_Bathymetry.png"),
+        os.path.join("figures", "GEBCO_2024_Bathymetry_TAT1,8.png"),
         dpi=1000,
         bbox_inches="tight",
     )
+    return
+
+
+def create_bathymetrymap_AJC(
+    cables=["AJC"],
+    colors=["m"],
+    date=dt.datetime(2024, 5, 10),
+    distance_interval=600,
+):
+    import sys
+
+    sys.path.append("py/")
+    import geopy.distance
+    from bathymetry import plot_profiles
+    from cable_route import compute_depth_profiles, get_cable_route
+    from geopy.distance import geodesic
+
+    o = get_cable_route()
+    fig, ax = create_new_pane(
+        date,
+        extent=[100, 180, -40, 40],
+        central_longitude=140,
+        central_latitude=0,
+        darray=20,
+        cx=[1.0, 0.25, 0.05, 0.4],
+    )
+
+    geolats, geolongs = [], []
+    for xy in o.geometry["coordinates"]:
+        lons, lats = np.array(xy)[:, 0], np.array(xy)[:, 1]
+        total_distance = geodesic((lats[0], lons[0]), (lats[-1], lons[-1])).km
+        if total_distance > distance_interval:
+            for i in range(len(lats) - 1):
+                td_km = geodesic((lats[i], lons[i]), (lats[i + 1], lons[i + 1])).km
+            geolats.extend(lats)
+            geolongs.extend(lons)
+
+    geolats, geolongs = geolats[:27], geolongs[:27]
+    ax.scatter(
+        geolongs,
+        geolats,
+        marker="s",
+        s=2,
+        c=colors[0],
+        transform=ccrs.PlateCarree(),
+    )
+    ax.plot(
+        geolongs,
+        geolats,
+        ls="-",
+        lw=1.2,
+        color="k",
+        transform=ccrs.PlateCarree(),
+    )
+
+    df = []
+    interval = 10.0
+    for j in range(len(geolats) - 1):
+        lat_i, lon_i, lat_f, lon_f = (
+            geolats[j],
+            geolongs[j],
+            geolats[j + 1],
+            geolongs[j + 1],
+        )
+        td_km = geodesic((lat_i, lon_i), (lat_f, lon_f)).km
+        bearing = calculate_bearing((lat_i, lon_i), (lat_f, lon_f))
+
+        for seg in np.arange(0, td_km, interval):
+            p = geopy.distance.distance(kilometers=seg).destination(
+                (lat_i, lon_i), bearing=bearing
+            )
+            df.append(
+                dict(
+                    geolats=p[0],
+                    geolongs=p[1],
+                )
+            )
+    df.append(dict(geolats=geolats[-1], geolongs=geolongs[-1]))
+    df = pd.DataFrame.from_dict(df)
+    df["cum_dist_from_00"] = df.apply(
+        lambda r: geodesic((geolats[0], geolongs[0]), (r.geolats, r.geolongs)).km,
+        axis=1,
+    )
+    depth_profile = compute_depth_profiles(df)
+    file_path = "data/2024/AJC/lat_long_bathymetry.csv"
+    depth_profile.to_csv(file_path, index=False, header=True)
+    segments = [
+        (0, 1),
+        (1, 26),
+        (26, 40),
+        (40, 75),
+        (75, 300),
+        (300, 410),
+        (410, 600),
+        (600, 670),
+        (670, 780),
+        (780, 860),
+        (860, 885),
+        (885, -1),
+    ]
+    colors = [
+        "tab:blue",
+        "tab:orange",
+        "tab:green",
+        "tab:red",
+        "tab:purple",
+        "tab:brown",
+        "tab:pink",
+        "tab:gray",
+        "tab:olive",
+        "tab:cyan",
+        "gold",
+        "limegreen",
+        "darkviolet",
+        "crimson",
+        "teal",
+        "peru",
+        "orchid",
+        "slategray",
+        "salmon",
+        "darkkhaki",
+    ]
+    bathymetry = plot_profiles(
+        file_path, segments, colors, 
+        "figures/2024/AJC/bathymetry_AJC.png", 
+        names=[
+            "CS-J", "DO-1", "DO-2", "DO-3",
+            "DO-4", "DO-5", "ROF-1", "DO-6",
+            "ROF-2", "DO-7", "DO-8", "CS-S",
+        ]
+    )
+    segment_coordinates = np.array(bathymetry.get_segment_coordinates())
+    print(f"Segments>>, {segment_coordinates}")
+    lats, lons = segment_coordinates[:, 0], segment_coordinates[:, 1]
+    ax.scatter(
+        lons,
+        lats,
+        marker="s",
+        s=5,
+        c="gold",
+        transform=ccrs.PlateCarree(),
+    )
+    for j in range(len(lons) - 1):
+        ax.text(
+            1 + (lons[j] + lons[j + 1]) / 2,
+            ((lats[j] + lats[j + 1]) / 2),
+            f"{j+1}",
+            ha="center",
+            va="center",
+            transform=ccrs.PlateCarree(),
+            fontsize=8,
+            fontdict={"weight": "bold", "color": "gold"},
+        )
+    ax.scatter(
+        [146.264, 149.36, 144.87, 140.186],
+        [-20.09, -35.32, 13.59, 36.232],
+        marker="D",
+        s=5,
+        c="darkgreen",
+        transform=ccrs.PlateCarree(),
+    )
+    ax.text(
+        149.36-2,
+        -35.32,
+        "CNB",
+        ha="center",
+        va="bottom",
+        transform=ccrs.PlateCarree(),
+        fontsize=8,
+        fontdict={"color": "green"},
+    )
+    ax.text(
+        146.264-2,
+        -20.09,
+        "CTA",
+        ha="center",
+        va="bottom",
+        transform=ccrs.PlateCarree(),
+        fontsize=8,
+        fontdict={"color": "green"},
+    )
+    ax.text(
+        144.87-2,
+        13.59,
+        "GUA",
+        ha="center",
+        va="bottom",
+        transform=ccrs.PlateCarree(),
+        fontsize=8,
+        fontdict={"color": "green"},
+    )
+    ax.text(
+        140.186,
+        36.232+2,
+        "KAK",
+        ha="center",
+        va="bottom",
+        transform=ccrs.PlateCarree(),
+        fontsize=8,
+        fontdict={"color": "green"},
+    )
+    plt.savefig(
+        os.path.join("figures", "GEBCO_2024_Bathymetry_AJC.png"),
+        dpi=1000,
+        bbox_inches="tight",
+    )
+    return
 
 
 if __name__ == "__main__":
-    create_bathymetrymap(["TAT1", "TAT8"])
+    # create_bathymetrymap_NA(["TAT1", "TAT8"])
+    create_bathymetrymap_AJC()

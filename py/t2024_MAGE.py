@@ -1,4 +1,5 @@
 import datetime as dt
+import os
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -6,9 +7,8 @@ from bathymetry import BathymetryAnalysis
 from cable import SCUBASModel
 from loguru import logger  # type: ignore
 from scubas.datasets import Site
-from utils import StackPlots, get_cable_informations, create_from_lat_lon
+from utils import StackPlots, create_from_lat_lon, get_cable_informations
 
-import os
 os.makedirs("figures/2024/MAGE/", exist_ok=True)
 
 station_maps = dict(
@@ -18,9 +18,7 @@ station_maps = dict(
     STJ=[
         "data/2024/MAGE/stj_May2024_MAGE.csv",
     ],
-    HAD=[
-        "data/2024/MAGE/had_May2024_MAGE.csv"
-    ],
+    HAD=["data/2024/MAGE/had_May2024_MAGE.csv"],
 )
 scale_stj = 1
 
@@ -168,8 +166,9 @@ def compile_2024_MAGE_TAT1(gplot=False):
     --------
     None
     """
-    
+
     import sys
+
     sys.path.append("py/")
     from t1958 import get_bathymetry, get_conductivity_profile
 

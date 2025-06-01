@@ -1,3 +1,4 @@
+import os
 from types import SimpleNamespace
 
 import matplotlib.pyplot as plt  # type: ignore
@@ -6,8 +7,69 @@ import pandas as pd  # type: ignore
 from geopy.distance import great_circle as GC  # type: ignore
 from loguru import logger
 
-import os
 os.makedirs("figures/", exist_ok=True)
+
+
+def plot_profiles(file_path, segments, colors, plot_file, names):
+    bathymetry = BathymetryAnalysis(file_path, segments, colors)
+    bathymetry.load_data()
+    bathymetry.plot_bathymetry(
+        plot_file,
+        names=names,
+        xticks=[0, 500, 1000, 2000, 4000, 8000],
+        xlim=[0, bathymetry.bathymetry_data.distance.iloc[-1]/1e3],
+        ylim=[-8, 0.5],
+        yticks=[-8, -6, -4, -2, -1, -0.5, 0],
+        yticklabels=[8, 6, 4, 2, 1, 0.5, 0],
+    )
+    return bathymetry
+
+
+def get_AJC_segments(gtype="lat"):
+    file_path = "data/2024/AJC/lat_long_bathymetry.csv"
+    segments = [
+        (0, 1),
+        (1, 26),
+        (26, 40),
+        (40, 75),
+        (75, 300),
+        (300, 410),
+        (410, 600),
+        (600, 670),
+        (670, 780),
+        (780, 860),
+        (860, 885),
+        (885, -1),
+    ]
+    colors = [
+        "tab:blue",
+        "tab:orange",
+        "tab:green",
+        "tab:red",
+        "tab:purple",
+        "tab:brown",
+        "tab:pink",
+        "tab:gray",
+        "tab:olive",
+        "tab:cyan",
+        "gold",
+        "limegreen",
+        "darkviolet",
+        "crimson",
+        "teal",
+        "peru",
+        "orchid",
+        "slategray",
+        "salmon",
+        "darkkhaki",
+    ]
+    # Initialize and use the BathymetryAnalysis class
+    bathymetry = BathymetryAnalysis(file_path, segments, colors)
+    bathymetry.load_data()
+    bathymetry.plot_bathymetry("figures/bathymetry.png")
+    segment_coordinates = np.array(bathymetry.get_segment_coordinates())
+    print(f"Segments>>, {segment_coordinates}")
+    return segment_coordinates[:, 0] if gtype == "lat" else segment_coordinates[:, 1]
 
 def get_TAT1_segments(gtype="lat"):
     file_path = "data/1958/lat_long_bathymetry.csv"
@@ -98,7 +160,18 @@ class BathymetryAnalysis:
             ].iloc[i - 1]
         return
 
-    def plot_bathymetry(self, output_path, dpi=1000, figsize=(8, 3), names=[]):
+    def plot_bathymetry(
+        self,
+        output_path,
+        dpi=1000,
+        figsize=(8, 3),
+        names=[],
+        xlim=[0, 4000],
+        xticks=[0, 500, 2000, 4000],
+        ylim=[-5, 0.5],
+        yticks=[-5, -4, -3, -2, -1, -0.5],
+        yticklabels=[5, 4, 3, 2, 1, 0.5],
+    ):
         """
         Plot the bathymetry data with segments and save the figure.
 
@@ -176,15 +249,13 @@ class BathymetryAnalysis:
         )
 
         # Customize plot appearance
-        ax.set_xticks(
-            [0, 500, 1000, 2000, 3000, 1e-3 * self.bathymetry_data.distance.iloc[-1]]
-        )
+        ax.set_xticks(xticks)
         ax.set_xlabel("Distance, km")
-        ax.set_xlim(0, 1e-3 * self.bathymetry_data.distance.iloc[-1])
+        ax.set_xlim(xlim)
         ax.axhline(0, ls="--", lw=0.4, color="b", alpha=0.7)
-        ax.set_ylim(-5, 0.5)
-        ax.set_yticks([-5, -4, -3, -2, -1, -0.5])
-        ax.set_yticklabels([5, 4, 3, 2, 1, 0.5])
+        ax.set_ylim(ylim)
+        ax.set_yticks(yticks)
+        ax.set_yticklabels(yticklabels)
         ax.set_ylabel("Depths, km")
 
         # Save the figure
@@ -231,6 +302,7 @@ SubSeaCables = SimpleNamespace(
             ],
         ),
         TAT1=dict(Latitudes=get_TAT1_segments(), Longitudes=get_TAT1_segments("lon")),
+        AJC=dict(Latitudes=get_AJC_segments(), Longitudes=get_AJC_segments("lon")),
     )
 )
 
