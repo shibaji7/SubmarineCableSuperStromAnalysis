@@ -552,11 +552,8 @@ def create_bathymetrymap_AJC(
     file_path = "data/2024/AJC/lat_long_bathymetry.csv"
     depth_profile.to_csv(file_path, index=False, header=True)
     segments = [
-        (0, 1),
-        (1, 26),
-        (26, 40),
-        (40, 75),
-        (75, 300),
+        (0, 26),
+        (26, 300),
         (300, 410),
         (410, 600),
         (600, 670),
@@ -588,13 +585,21 @@ def create_bathymetrymap_AJC(
         "darkkhaki",
     ]
     bathymetry = plot_profiles(
-        file_path, segments, colors, 
-        "figures/2024/AJC/bathymetry_AJC.png", 
+        file_path,
+        segments,
+        colors,
+        "figures/2024/AJC/bathymetry_AJC.png",
         names=[
-            "CS-J", "DO-1", "DO-2", "DO-3",
-            "DO-4", "DO-5", "ROF-1", "DO-6",
-            "ROF-2", "DO-7", "DO-8", "CS-S",
-        ]
+            "DO-1",
+            "DO-2",
+            "DO-3",
+            "RDG-1",
+            "DO-4",
+            "RDG-2",
+            "DO-5",
+            "DO-6",
+            "CS-A",
+        ],
     )
     segment_coordinates = np.array(bathymetry.get_segment_coordinates())
     print(f"Segments>>, {segment_coordinates}")
@@ -627,7 +632,7 @@ def create_bathymetrymap_AJC(
         transform=ccrs.PlateCarree(),
     )
     ax.text(
-        149.36-2,
+        149.36 - 2,
         -35.32,
         "CNB",
         ha="center",
@@ -637,7 +642,7 @@ def create_bathymetrymap_AJC(
         fontdict={"color": "green"},
     )
     ax.text(
-        146.264-2,
+        146.264 - 2,
         -20.09,
         "CTA",
         ha="center",
@@ -647,7 +652,7 @@ def create_bathymetrymap_AJC(
         fontdict={"color": "green"},
     )
     ax.text(
-        144.87-2,
+        144.87 - 2,
         13.59,
         "GUA",
         ha="center",
@@ -658,7 +663,7 @@ def create_bathymetrymap_AJC(
     )
     ax.text(
         140.186,
-        36.232+2,
+        36.232 + 2,
         "KAK",
         ha="center",
         va="bottom",

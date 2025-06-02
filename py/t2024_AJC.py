@@ -31,7 +31,7 @@ from bathymetry import BathymetryAnalysis
 from cable import SCUBASModel
 from loguru import logger  # type: ignore
 from scubas.datasets import Site
-from utils import StackPlots, get_cable_informations, read_iaga, create_from_lat_lon
+from utils import StackPlots, create_from_lat_lon, get_cable_informations, read_iaga
 
 station_maps = dict(
     CNB=[
@@ -58,6 +58,7 @@ dSegmented_files_map = dict(
     CNB=[f"figures/2024/AJC/CNB.csv"],
 )
 import os
+
 os.makedirs("figures/2024/AJC/", exist_ok=True)
 
 
@@ -127,7 +128,9 @@ def read_dataset() -> pd.DataFrame:
     return
 
 
-def get_bathymetry(names, file_path: str = "data/2024/AJC/lat_long_bathymetry.csv") -> None:
+def get_bathymetry(
+    names, file_path: str = "data/2024/AJC/lat_long_bathymetry.csv"
+) -> None:
     """
     Analyzes bathymetry data to segment the cable path.
 
@@ -142,11 +145,8 @@ def get_bathymetry(names, file_path: str = "data/2024/AJC/lat_long_bathymetry.cs
         Bathymetry analysis object, segment coordinates, and segment definitions.
     """
     segments = [
-        (0, 1),
-        (1, 26),
-        (26, 40),
-        (40, 75),
-        (75, 300),
+        (0, 26),
+        (26, 300),
         (300, 410),
         (410, 600),
         (600, 670),
@@ -210,7 +210,7 @@ def get_conductivity_profile(dSegments, segments, bth):
     for j, p, seg in zip(range(len(profiles)), profiles, segments):
         o = bth.iloc[seg[0] : seg[1]]
         depth = np.median(o["bathymetry.meters"])
-        p.layers[0].thickness = 1000. if j==0 or j==len(profiles)-1 else depth # in meters
+        p.layers[0].thickness = depth # in meters
         # All layers in meters
     return profiles
 
@@ -234,17 +234,29 @@ def compile_2024_AJC():
     --------
     None
     """
-    names=[
-            "CS-J", "DO-1", "DO-2", "DO-3",
-            "DO-4", "DO-5", "ROF-1", "DO-6",
-            "ROF-2", "DO-7", "DO-8", "CS-S",
-        ]
+    names = [
+        "DO-1",
+        "DO-2",
+        "DO-3",
+        "RDG-1",
+        "DO-4",
+        "RDG-2",
+        "DO-5",
+        "DO-6",
+        "CS-A",
+    ]
     _ = read_dataset()
     bathymetry, segment_coordinates, segments = get_bathymetry(names)
     stns = [
-        "KAK", "KAK", "KAK", "KAK",
-        "GUA", "GUA", "GUA", "CTA", 
-        "CTA", "CNB", "CNB", "CNB"
+        "KAK",
+        "KAK",
+        "GUA",
+        "GUA",
+        "GUA",
+        "CTA",
+        "CTA",
+        "CNB",
+        "CNB",
     ]
     segment_files = [dSegmented_files_map[s] for s in stns]
     profiles = get_conductivity_profile(
@@ -262,7 +274,7 @@ def compile_2024_AJC():
         segment_files=segment_files,
     )
     model.read_stations(
-        ["KAK", "GUA", "CTA", "CNB"], 
+        ["KAK", "GUA", "CTA", "CNB"],
         [
             dSegmented_files_map["KAK"],
             dSegmented_files_map["GUA"],
@@ -279,7 +291,8 @@ def compile_2024_AJC():
         fname="figures/2024/AJC/2024.Scubas.png",
         date_lim=[dt.datetime(2024, 5, 10, 12), dt.datetime(2024, 5, 12)],
         fig_title="SCUBAS / Time, UT since 12 UT on 10 May 2024",
-        text_size=10, ylim=[-50, 50]
+        text_size=10,
+        ylim=[-50, 50],
     )
     model.plot_profiles(
         fname="figures/2024/AJC/2024.Profiles.png",
@@ -289,7 +302,7 @@ def compile_2024_AJC():
         aylim=[1e-3, 1e0],
         t_mul=1e-3,
         nrows=3,
-        ncols=4,
+        ncols=3,
     )
     model.plot_e_fields(
         fname="figures/2024/AJC/2024.Scubas.Exfield.png",
@@ -297,19 +310,19 @@ def compile_2024_AJC():
         fig_title=r"$E_x$-field / Time: UT since 12 UT on 10 May 2024",
         text_size=15,
         ylim=[-100, 100],
-        nrows=4,
+        nrows=3,
         component="X",
-        groups=[[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]],
+        groups=[[0, 1, 2], [3, 4, 5], [6, 7, 8]],
     )
     model.plot_e_fields(
         fname="figures/2024/AJC/2024.Scubas.Eyfield.png",
         date_lim=[dt.datetime(2024, 5, 10, 12), dt.datetime(2024, 5, 12)],
         fig_title=r"$E_y$-field / Time: UT since 12 UT on 10 May 2024",
         text_size=15,
-        nrows=4,
+        nrows=3,
         ylim=[-100, 100],
         component="Y",
-        groups=[[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]],
+        groups=[[0, 1, 2], [3, 4, 5], [6, 7, 8]],
     )
     # obs = load_extracted_voltage()
     # model.plot_zoomedin_analysis(

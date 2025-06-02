@@ -17,7 +17,7 @@ def plot_profiles(file_path, segments, colors, plot_file, names):
         plot_file,
         names=names,
         xticks=[0, 500, 1000, 2000, 4000, 8000],
-        xlim=[0, bathymetry.bathymetry_data.distance.iloc[-1]/1e3],
+        xlim=[0, bathymetry.bathymetry_data.distance.iloc[-1] / 1e3],
         ylim=[-8, 0.5],
         yticks=[-8, -6, -4, -2, -1, -0.5, 0],
         yticklabels=[8, 6, 4, 2, 1, 0.5, 0],
@@ -28,11 +28,8 @@ def plot_profiles(file_path, segments, colors, plot_file, names):
 def get_AJC_segments(gtype="lat"):
     file_path = "data/2024/AJC/lat_long_bathymetry.csv"
     segments = [
-        (0, 1),
-        (1, 26),
-        (26, 40),
-        (40, 75),
-        (75, 300),
+        (0, 26),
+        (26, 300),
         (300, 410),
         (410, 600),
         (600, 670),
@@ -66,10 +63,30 @@ def get_AJC_segments(gtype="lat"):
     # Initialize and use the BathymetryAnalysis class
     bathymetry = BathymetryAnalysis(file_path, segments, colors)
     bathymetry.load_data()
-    bathymetry.plot_bathymetry("figures/bathymetry.png")
+    names = [
+        "DO-1",
+        "DO-2",
+        "DO-3",
+        "RDG-1",
+        "DO-4",
+        "RDG-2",
+        "DO-5",
+        "DO-6",
+        "CS-A",
+    ]
+    bathymetry.plot_bathymetry(
+        "figures/2024/AJC/bathymetry_AJC.png",
+        names=names,
+        xticks=[0, 500, 1000, 2000, 4000, 8000],
+        xlim=[0, bathymetry.bathymetry_data.distance.iloc[-1] / 1e3],
+        ylim=[-8, 0.5],
+        yticks=[-8, -6, -4, -2, -1, -0.5, 0],
+        yticklabels=[8, 6, 4, 2, 1, 0.5, 0],
+    )
     segment_coordinates = np.array(bathymetry.get_segment_coordinates())
     print(f"Segments>>, {segment_coordinates}")
     return segment_coordinates[:, 0] if gtype == "lat" else segment_coordinates[:, 1]
+
 
 def get_TAT1_segments(gtype="lat"):
     file_path = "data/1958/lat_long_bathymetry.csv"
