@@ -210,7 +210,7 @@ def get_conductivity_profile(dSegments, segments, bth):
     for j, p, seg in zip(range(len(profiles)), profiles, segments):
         o = bth.iloc[seg[0] : seg[1]]
         depth = np.median(o["bathymetry.meters"])
-        p.layers[0].thickness = depth # in meters
+        p.layers[0].thickness = depth  # in meters
         # All layers in meters
     return profiles
 

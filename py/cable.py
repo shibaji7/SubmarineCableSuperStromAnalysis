@@ -73,10 +73,12 @@ class SCUBASModel(object):
             )
         return
 
-    def run_cable_segment(self):
+    def run_cable_segment(self, fname=None):
         # Running the cable operation
         logger.info(f"Components: {self.tlines[0].components}")
         self.cable = Cable(self.tlines, self.tlines[0].components)
+        if fname:
+            self.cable.tot_params.to_csv(fname, index=False, header=True, float_format="%g")
         return
 
     def plot_TS_with_others(
@@ -148,11 +150,9 @@ class SCUBASModel(object):
             tax.set_yticks(tyticks)
             if i in tag0_loc:
                 ax.set_ylabel("Amplitude, mV/km/nT", color="r")
-                tax.tick_params(axis="y", labelright=False)
             if i in tag1_loc:
                 ax.set_xlabel("Frequency, Hz")
             if i in tag2_loc:
-                ax.tick_params(axis="y", labelleft=False)
                 tax.set_ylabel("Phase, deg", color="b")
             ax.loglog(
                 tf.freq,
@@ -180,6 +180,10 @@ class SCUBASModel(object):
                 va="center",
                 transform=ax.transAxes,
             )
+            if (i not in tag0_loc):
+                ax.set_yticklabels([])
+            if (i not in tag2_loc):
+                tax.set_yticklabels([])
         if len(self.tlines) < len(sp.axes):
             sp.axes[-1].axis("off")
         sp.fig.subplots_adjust(wspace=0.1, hspace=0.1)

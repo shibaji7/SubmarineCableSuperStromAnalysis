@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-geometry.py: 
+geometry.py:
     This module contains the CartoBase class, which is a subclass of GeoAxes
     from the cartopy library. The CartoBase class is used to create a map projection
     and overlay coastlines and lakes on the map. The class also provides methods to

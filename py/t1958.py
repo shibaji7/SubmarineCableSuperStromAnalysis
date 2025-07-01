@@ -260,7 +260,7 @@ def compile_1958(datafile=["data/1958/compiled.csv"]):
     )
     model.read_stations(["ESK"], [datafile])
     model.initialize_TL()
-    model.run_cable_segment()
+    model.run_cable_segment("data/1958/TAT1SimVolt.csv")
 
     # Generate plots
     model.plot_TS_with_others(
@@ -276,6 +276,13 @@ def compile_1958(datafile=["data/1958/compiled.csv"]):
         tyticks=[-90, -45, 0, 45, 90],
         aylim=[1e-3, 1e0],
         t_mul=1.0,
+        nrows=2,
+        ncols=4,
+        text_size=15,
+        tag0_loc=[0, 4],
+        tag1_loc=[4, 5, 6, 7],
+        tag2_loc=[3, 7],
+        figsize=(4, 4),
     )
     model.plot_e_fields(
         fname="figures/1958/1958.Scubas.Exfield.png",

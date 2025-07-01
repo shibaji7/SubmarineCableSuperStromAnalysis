@@ -200,7 +200,7 @@ def compile_1989(gplot=False):
     )
     model.read_stations(stns, segment_files, False)
     model.initialize_TL()
-    model.run_cable_segment()
+    model.run_cable_segment("data/1989/TAT8SimVolt.csv")
 
     # # Generate plots
     if gplot:

@@ -63,6 +63,7 @@ class StackPlots:
         ax: Optional[plt.Axes] = None,
         ylabel_color: Optional[str] = "k",
         interval: Optional[int] = 3,
+        dfx: str = "%H",
     ) -> tuple:
         """
         Plot a stack of plots with the given time and value data.
@@ -93,7 +94,7 @@ class StackPlots:
             ax.set_xlim([time[0], time[-1]])
         if self.datetime:
             ax.xaxis.set_major_locator(mdates.HourLocator(interval=interval))
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter(dfx))
         ax.plot(time, value, color=color, linewidth=lw, ls=ls, label=label)
         if text:
             ax.text(0.05, 1.05, text, ha="left", va="center", transform=ax.transAxes)

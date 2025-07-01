@@ -323,7 +323,53 @@ SubSeaCables = SimpleNamespace(
     )
 )
 
+
+def create_bathymetrystacks():
+    file_path = "data/1958/lat_long_bathymetry.csv"
+    segments = [
+        (0, 32),
+        (32, 50),
+        (50, 60),
+        (60, 170),
+        (170, 330),
+        (330, 410),
+        (410, 430),
+        (430, -1),
+    ]
+    colors = [
+        "tab:blue",
+        "tab:orange",
+        "tab:green",
+        "tab:red",
+        "tab:purple",
+        "tab:brown",
+        "tab:pink",
+        "tab:gray",
+        "tab:olive",
+        "tab:cyan",
+        "gold",
+        "limegreen",
+        "darkviolet",
+        "crimson",
+        "teal",
+        "peru",
+        "orchid",
+        "slategray",
+        "salmon",
+        "darkkhaki",
+    ]
+    # Initialize and use the BathymetryAnalysis class
+    bathymetry = BathymetryAnalysis(file_path, segments, colors)
+    bathymetry.load_data()
+    bathymetry.plot_bathymetry("figures/bathymetry.png")
+    segment_coordinates = np.array(bathymetry.get_segment_coordinates())
+    print(f"Segments>>, {segment_coordinates}")
+        
+    return
+
+
 # Example usage
 if __name__ == "__main__":
     # Define input parameters
     get_TAT1_segments()
+    # create_bathymetrystacks()
