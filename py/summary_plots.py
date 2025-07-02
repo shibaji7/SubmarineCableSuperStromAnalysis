@@ -4,6 +4,7 @@ from utils import StackPlots
 import datetime as dt
 import pandas as pd
 import numpy as np
+import matplotlib.dates as mdates
 
 Dst1958 = pd.read_csv(
     "data/1958/Dst.csv",
@@ -224,5 +225,174 @@ sp.save_fig("figures/Mag_StackPlots.png")
 sp.close()
 
 
-datasets_1989 = pd.read_csv("data/1989/Voltage/TAT8Volt-rescale.csv", parse_dates=["Time"])
+datasets_1989 = dict(
+    data = pd.read_csv("data/1989/Voltage/TAT8Volt-rescale.csv", parse_dates=["Time"]),
+    sim = pd.read_csv("data/1989/TAT8SimVolt.csv", parse_dates=["Time"]),
+    tags = [
+        r"CS-W$_8$", r"DO-1$_8$", r"DO-2$_8$", 
+        r"DO-3$_8$", r"DO-4$_8$", r"DO-5$_8$",
+        r"MAR$_8$", r"DO-6$_8$", r"CS-E$_8$",
+    ]
+)
 
+datasets_1958 = dict(
+    data = pd.read_csv("data/1958/Voltage/TAT1Volt-rescale.csv", parse_dates=["Time"]),
+    sim = pd.read_csv("data/1958/TAT1SimVolt.csv", parse_dates=["Time"]),
+    tags = [
+        r"CS-W$_1$", r"DO-1$_1$", r"DO-2$_1$", 
+        r"DO-3$_1$", r"DO-4$_1$",
+        r"MAR$_1$", r"DO-5$_1$", r"CS-E$_1$",
+    ]
+)
+
+# Plot E-field datasets
+sp = StackPlots(
+    nrows=2,
+    ncols=2,
+    datetime=True,
+    figsize=(5, 3),
+    text_size=12,
+    sharex=False,
+)
+efields = datasets_1989["sim"][
+    [f"E.X.%02d" % l for l in range(9)] + ["Time"] + 
+    [f"E.Y.%02d" % l for l in range(9)]
+]
+ax0, ax1 = sp.axes[1], sp.axes[3]
+ax0.xaxis.set_major_locator(mdates.HourLocator(interval=12))
+ax0.xaxis.set_major_formatter(mdates.DateFormatter("$%H^{%M}$"))
+ax1.set_xlabel("UT Hours (since 12 March 1989, 12:00 UT)",)
+ax1.xaxis.set_major_locator(mdates.HourLocator(interval=12))
+ax1.xaxis.set_major_formatter(mdates.DateFormatter("$%H^{%M}$"))
+for l in range(9):
+    ex, ey = efields[f"E.X.{l:02d}"], efields[f"E.Y.{l:02d}"]
+    ax0.plot(
+        efields["Time"], ex+(l*500), linewidth=0.5, ls="-",
+        color="k"
+    )
+    ax0.text(
+        dt.datetime(1989, 3, 14, 20), (l*500)+np.median(ex), datasets_1989["tags"][l],
+        ha="right", va="top",
+        fontsize=8, color="r"
+    )
+    ax1.plot(
+        efields["Time"], ey+(l*500), linewidth=0.5, ls="-",
+        color="k"
+    )
+    ax1.text(
+        dt.datetime(1989, 3, 14, 20), (l*500)+np.median(ey), datasets_1989["tags"][l],
+        ha="right", va="top",
+        fontsize=8, color="r"
+    )
+ax0.set_xlim([dt.datetime(1989, 3, 12, 12), dt.datetime(1989, 3, 15)])
+ax0.set_yticklabels([])
+ax0.set_xticklabels([])
+ax1.set_xlim([dt.datetime(1989, 3, 12, 12), dt.datetime(1989, 3, 15)])
+ax1.set_yticklabels([])
+ax0.text(
+    0.1, 0.95, "(B-1) March 1989", ha="left", va="top", transform=ax0.transAxes
+)
+ax1.text(
+    0.1, 0.95, "(B-2)", ha="left", va="top", transform=ax1.transAxes
+)
+ax0.vlines(
+    dt.datetime(1989, 3, 13, 1), 2000, 2500, color="b", linestyle="-", linewidth=1
+)
+ax0.hlines(
+    2000, dt.datetime(1989, 3, 13, 0, 30), dt.datetime(1989, 3, 13, 1, 30), color="b", linestyle="-", linewidth=1
+)
+ax0.hlines(
+    2500, dt.datetime(1989, 3, 13, 0, 30), dt.datetime(1989, 3, 13, 1, 30), color="b", linestyle="-", linewidth=1
+)
+ax0.text(
+    dt.datetime(1989, 3, 13, 1, 45), 2250, "500 mv/km", color="b", ha="left", va="center"
+)
+
+ax1.vlines(
+    dt.datetime(1989, 3, 13, 1), 2000, 2500, color="b", linestyle="-", linewidth=1
+)
+ax1.hlines(
+    2000, dt.datetime(1989, 3, 13, 0, 30), dt.datetime(1989, 3, 13, 1, 30), color="b", linestyle="-", linewidth=1
+)
+ax1.hlines(
+    2500, dt.datetime(1989, 3, 13, 0, 30), dt.datetime(1989, 3, 13, 1, 30), color="b", linestyle="-", linewidth=1
+)
+ax1.text(
+    dt.datetime(1989, 3, 13, 1, 45), 2250, "500 mv/km", color="b", ha="left", va="center"
+)
+
+efields = datasets_1958["sim"][
+    [f"E.X.%02d" % l for l in range(8)] + ["Time"] + 
+    [f"E.Y.%02d" % l for l in range(8)]
+]
+ax0, ax1 = sp.axes[0], sp.axes[2]
+ax0.set_ylabel(r"$E_x$, mv/km")
+ax0.xaxis.set_major_locator(mdates.HourLocator(interval=6))
+ax0.xaxis.set_major_formatter(mdates.DateFormatter("$%H^{%M}$"))
+ax1.set_ylabel(r"$E_y$, mv/km")
+ax1.set_xlabel("UT Hours (since 10 February 1958, 12:00 UT)",)
+ax1.xaxis.set_major_locator(mdates.HourLocator(interval=6))
+ax1.xaxis.set_major_formatter(mdates.DateFormatter("$%H^{%M}$"))
+for l in range(8):
+    ex, ey = efields[f"E.X.{l:02d}"], efields[f"E.Y.{l:02d}"]
+    ax0.plot(
+        efields["Time"], ex+(l*2000), linewidth=0.5, ls="-",
+        color="k"
+    )
+    ax0.text(
+        dt.datetime(1958, 2, 11,), (l*2000)+np.median(ex), datasets_1958["tags"][l],
+        ha="right", va="top",
+        fontsize=8, color="r"
+    )
+    ax1.plot(
+        efields["Time"], ey+(l*2000), linewidth=0.5, ls="-",
+        color="k"
+    )
+    ax1.text(
+        dt.datetime(1958, 2, 11,), (l*2000)+np.median(ey), datasets_1958["tags"][l],
+        ha="right", va="top",
+        fontsize=8, color="r"
+    )
+    pass
+ax0.set_xlim([dt.datetime(1958, 2, 10, 16), dt.datetime(1958, 2, 11, 8)])
+ax0.set_yticklabels([])
+ax0.set_xticklabels([])
+ax1.set_xlim([dt.datetime(1958, 2, 10, 16), dt.datetime(1958, 2, 11, 8)])
+ax1.set_yticklabels([])
+ax0.text(
+    0.1, 0.95, "(A-1) March 1958", ha="left", va="top", transform=ax0.transAxes
+)
+ax1.text(
+    0.1, 0.95, "(A-2)", ha="left", va="top", transform=ax1.transAxes
+)
+ax0.vlines(
+    dt.datetime(1958, 2, 10, 20), 2000, 4000, color="b", linestyle="-", linewidth=1
+)
+ax0.hlines(
+    2000, dt.datetime(1958, 2, 10, 19, 45), dt.datetime(1958, 2, 10, 20, 15), color="b", linestyle="-", linewidth=1
+)
+ax0.hlines(
+    4000, dt.datetime(1958, 2, 10, 19, 45), dt.datetime(1958, 2, 10, 20, 15), color="b", linestyle="-", linewidth=1
+)
+ax0.text(
+    dt.datetime(1958, 2, 10, 21), 3000, "2000 mv/km", color="b", ha="left", va="center"
+)
+
+ax1.vlines(
+    dt.datetime(1958, 2, 10, 20), 2000, 4000, color="b", linestyle="-", linewidth=1
+)
+ax1.hlines(
+    2000, dt.datetime(1958, 2, 10, 19, 45), dt.datetime(1958, 2, 10, 20, 15), color="b", linestyle="-", linewidth=1
+)
+ax1.hlines(
+    4000, dt.datetime(1958, 2, 10, 19, 45), dt.datetime(1958, 2, 10, 20, 15), color="b", linestyle="-", linewidth=1
+)
+ax1.text(
+    dt.datetime(1958, 2, 10, 21), 3000, "2000 mv/km", color="b", ha="left", va="center"
+)
+
+sp.save_fig("figures/E-fields.png")
+sp.close()
+# Compare the datastets
+
+# Create Error Analysis

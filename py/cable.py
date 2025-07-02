@@ -78,7 +78,7 @@ class SCUBASModel(object):
         logger.info(f"Components: {self.tlines[0].components}")
         self.cable = Cable(self.tlines, self.tlines[0].components)
         if fname:
-            self.cable.tot_params.to_csv(fname, index=False, header=True, float_format="%g")
+            self.cable.tot_params.to_csv(fname, index=True, header=True, float_format="%g")
         return
 
     def plot_TS_with_others(
