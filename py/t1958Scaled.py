@@ -27,15 +27,15 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
     """
     import glob
 
-    stns, coords = ["FRD", "ESK", "HAD", "LER"], ["HDZ", "HDZ", "HDZ", "HDZ"]
+    stns, coords = ["FRD", "HAD", "ESK"], ["HDZ", "HDZ", "HDZ", "HDZ"]
     frames = {}
     for stn, coord in zip(stns, coords):
         files = glob.glob(base_path + f"{stn}*.dat")
         files.sort()
         frames[stn] = pd.concat([read_iaga(f) for f in files])
-
+    xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 5)]
     # Plot processed data
-    sp = StackPlots(nrows=4, ncols=1, datetime=True, figsize=(6, 4), text_size=12)
+    sp = StackPlots(nrows=len(stns), ncols=1, datetime=True, figsize=(6, 4), text_size=12)
     for stn, coord in zip(stns, coords):
         data = frames[stn]
         data.drop_duplicates().sort_index(inplace=True)
@@ -44,7 +44,6 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
             data.X - np.median(data.X.iloc[:60]),
             ylim=[-1500, 1500],
             label=r"$B_x$",
-            # xlim=[dt.datetime(1989, 3, 12, 12), dt.datetime(1989, 3, 14, 12)],
             interval=6,
         )
         sp.plot_stack_plots(
@@ -53,7 +52,6 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
             ylim=[-1500, 1500],
             label=r"$B_y$",
             color="r",
-            # xlim=[dt.datetime(1989, 3, 12, 12), dt.datetime(1989, 3, 14, 12)],
             ax=ax,
             interval=6,
         )
@@ -65,15 +63,99 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
             xlabel="Time, UT since 12 UT on 10 Feb 1989",
             color="k",
             ylabel=f"$B[{stn.lower()}]$, nT",
-            xlim=[dt.datetime(1958, 2, 10, 12), dt.datetime(1958, 2, 12, 6)],
+            xlim=xlim,
             ax=ax,
-            interval=6,
+            interval=1,
         )
         ax.legend(loc=2, fontsize=12)
+        data = data[(data.index >= xlim[0]) & (data.index <= xlim[1])]
         data.to_csv(f"data/1958/{stn}_scaled.csv", header=True, index=True, float_format="%g")
         sp.save_fig("figures/1958/1958.data.png")
         sp.close()
     return
+
+def get_bathymetry(names, file_path: str = "data/1958/lat_long_bathymetry.csv") -> None:
+    """
+    Analyzes bathymetry data to segment the cable path.
+
+    Parameters:
+    -----------
+    file_path : str
+        File path for bathymetry data.
+
+    Returns:
+    --------
+    tuple
+        Bathymetry analysis object, segment coordinates, and segment definitions.
+    """
+    segments = [
+        (0, 32),
+        (32, 50),
+        (50, 60),
+        (60, 170),
+        (170, 330),
+        (330, 410),
+        (410, 435),
+        (435, -1),
+    ]
+    colors = [
+        "tab:blue",
+        "tab:orange",
+        "tab:green",
+        "tab:red",
+        "tab:purple",
+        "tab:brown",
+        "tab:pink",
+        "tab:gray",
+        "tab:olive",
+        "tab:cyan",
+        "gold",
+        "limegreen",
+        "darkviolet",
+        "crimson",
+        "teal",
+        "peru",
+        "orchid",
+        "slategray",
+        "salmon",
+        "darkkhaki",
+    ]
+
+    # Initialize and use the BathymetryAnalysis class
+    bathymetry = BathymetryAnalysis(file_path, segments, colors)
+    bathymetry.load_data()
+    bathymetry.plot_bathymetry("figures/1958/bathymetry_TAT-1.png", names=names)
+    segment_coordinates = bathymetry.get_segment_coordinates()
+    print("Segment Coordinates:", segment_coordinates)
+    return bathymetry, segment_coordinates, segments
+
+
+def get_conductivity_profile(dSegments, segments, bth):
+    """
+    Computes conductivity profiles for each cable segment.
+
+    Parameters:
+    -----------
+    dSegments : list
+        Segment coordinates.
+    segments : list
+        Segment definitions.
+    bth : pd.DataFrame
+        Bathymetry data.
+
+    Returns:
+    --------
+    list
+        Conductivity profiles for each segment.
+    """
+    from scubas.conductivity import ConductivityProfile  # type: ignore
+
+    profiles = ConductivityProfile.compile_bined_profiles(np.array(dSegments))
+    for p, seg in zip(profiles, segments):
+        o = bth.iloc[seg[0] : seg[1]]
+        depth = np.median(o["bathymetry.meters"])
+        p.layers[0].thickness = depth / 1e3  # in meters
+    return profiles
 
 def compile_1958(gplot=False):
     """
@@ -89,6 +171,15 @@ def compile_1958(gplot=False):
     None
     """
     read_dataset()
+    names = ["CS-W", "DO-1", "DO-2", "DO-3", "DO-4", "MAR", "DO-5", "CS-E"]
+    _ = read_dataset()
+    bathymetry, segment_coordinates, segments = get_bathymetry(names)
+    segment_files = [
+        f"data/1958/{name}_scaled.csv" for name in names
+    ]
+    profiles = get_conductivity_profile(
+        segment_coordinates, segments, bathymetry.bathymetry_data
+    )
     return
 
 if __name__ == "__main__":
