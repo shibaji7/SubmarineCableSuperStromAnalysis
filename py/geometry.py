@@ -680,5 +680,5 @@ def create_bathymetrymap_AJC(
 
 
 if __name__ == "__main__":
-    # create_bathymetrymap_NA(["TAT1", "TAT8"])
-    create_bathymetrymap_AJC()
+    create_bathymetrymap_NA(["TAT1", "TAT8"])
+    # create_bathymetrymap_AJC()

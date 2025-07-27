@@ -27,7 +27,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
     """
     import glob
 
-    stns, coords = ["FRD", "HAD", "ESK"], ["HDZ", "HDZ", "HDZ", "HDZ"]
+    stns, coords = ["FRD", "HAD"], ["HDZ", "HDZ", "HDZ", "HDZ"]
     frames = {}
     for stn, coord in zip(stns, coords):
         files = glob.glob(base_path + f"{stn}*.dat")
@@ -68,7 +68,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
             interval=1,
         )
         ax.legend(loc=2, fontsize=12)
-        data = data[(data.index >= xlim[0]) & (data.index <= xlim[1])]
+        data = data[(data.index >= xlim[0]) & (data.index < xlim[1])]
         data.to_csv(f"data/1958/{stn}_scaled.csv", header=True, index=True, float_format="%g")
         sp.save_fig("figures/1958/1958.data.png")
         sp.close()
@@ -174,11 +174,36 @@ def compile_1958(gplot=False):
     names = ["CS-W", "DO-1", "DO-2", "DO-3", "DO-4", "MAR", "DO-5", "CS-E"]
     _ = read_dataset()
     bathymetry, segment_coordinates, segments = get_bathymetry(names)
+    segment_names = ["FRD", "FRD", "FRD", "FRD", "HAD", "HAD", "HAD", "HAD"]
     segment_files = [
-        f"data/1958/{name}_scaled.csv" for name in names
+        [f"data/1958/{name}_scaled.csv"] for name in segment_names
     ]
     profiles = get_conductivity_profile(
         segment_coordinates, segments, bathymetry.bathymetry_data
+    )
+    cable = create_from_lat_lon(
+        segment_coordinates,
+        profiles,
+        names=names,
+    )
+
+    model = SCUBASModel(
+        cable_name="TAT-1",
+        cable_structure=cable,
+        segment_files=segment_files,
+    )
+
+    model.read_stations(segment_names, segment_files)
+    model.initialize_TL()
+
+    model.run_cable_segment("data/1958/TAT1SimVolt.csv")
+
+    xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 5)]
+    model.plot_TS_with_others(
+        fname="figures/1958/1958.Scubas.png",
+        date_lim=xlim,
+        fig_title="SCUBAS, Time: UT since 0 UT on 11 Feb 1958",
+        text_size=10, ylim=[-1000, 2000]
     )
     return
 

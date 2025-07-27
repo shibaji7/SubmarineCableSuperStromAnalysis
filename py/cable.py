@@ -57,6 +57,7 @@ class SCUBASModel(object):
         for i, seg in enumerate(self.cable_structure.cable_seg):
             site = seg["site"]
             site.layers[0].thickness *= tmul
+            print(self.segment_files[i])
             self.tlines.append(
                 TransmissionLine(
                     sec_id=seg["sec_id"],
