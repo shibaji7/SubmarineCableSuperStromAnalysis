@@ -60,7 +60,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
             data.Z - np.median(data.Z.iloc[:60]),
             ylim=[-1500, 1500],
             label=r"$B_z$",
-            xlabel="Time, UT since 12 UT on 10 Feb 1989",
+            xlabel="Time, UT since 0 UT on 11 Feb 1958",
             color="k",
             ylabel=f"$B[{stn.lower()}]$, nT",
             xlim=xlim,
