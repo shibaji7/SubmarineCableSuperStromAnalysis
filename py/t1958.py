@@ -125,7 +125,7 @@ def read_dataset(
         data.Z - np.median(data.Z.iloc[:60]),
         ylim=[-1500, 1500],
         label=r"$B_z$",
-        xlabel="Time, UT since 16 UT on 10 Feb 1958",
+        xlabel="Time, UT since 1 UT on 11 Feb 1958",
         color="k",
         ylabel=r"$B_{esk}$, nT",
         xlim=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 5)],
