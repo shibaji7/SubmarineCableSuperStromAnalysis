@@ -27,7 +27,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
     """
     import glob
 
-    stns, coords = ["FRD", "HAD"], ["HDZ", "HDZ", "HDZ", "HDZ"]
+    stns, coords = ["ESK", "FRD"], ["HDZ", "HDZ", "HDZ", "HDZ"]
     frames = {}
     for stn, coord in zip(stns, coords):
         files = glob.glob(base_path + f"{stn}*.dat")
@@ -69,6 +69,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
         )
         ax.legend(loc=2, fontsize=12)
         data = data[(data.index >= xlim[0]) & (data.index < xlim[1])]
+        data.index = data.index - dt.timedelta(minutes=1)
         data.to_csv(f"data/1958/{stn}_scaled.csv", header=True, index=True, float_format="%g")
         sp.save_fig("figures/1958/1958.data.png")
         sp.close()
@@ -154,8 +155,13 @@ def get_conductivity_profile(dSegments, segments, bth):
     for p, seg in zip(profiles, segments):
         o = bth.iloc[seg[0] : seg[1]]
         depth = np.median(o["bathymetry.meters"])
-        p.layers[0].thickness = depth / 1e3  # in meters
+        p.layers[0].thickness = depth / 1e2  # in meters
     return profiles
+
+def load_extracted_voltage(fname="data/1958/Voltage/TAT1Volt-rescale.csv"):
+    # TAT1Volt-rescale.csv
+    data = pd.read_csv(fname, parse_dates=["Time"])
+    return data
 
 def compile_1958(gplot=False):
     """
@@ -175,6 +181,8 @@ def compile_1958(gplot=False):
     _ = read_dataset()
     bathymetry, segment_coordinates, segments = get_bathymetry(names)
     segment_names = ["FRD", "FRD", "FRD", "FRD", "HAD", "HAD", "HAD", "HAD"]
+    segment_names = ["ESK", "ESK", "ESK", "ESK", "ESK", "ESK", "ESK", "ESK"]
+    segment_names = ["FRD", "FRD", "FRD", "FRD", "ESK", "ESK", "ESK", "ESK"]
     segment_files = [
         [f"data/1958/{name}_scaled.csv"] for name in segment_names
     ]
@@ -203,7 +211,50 @@ def compile_1958(gplot=False):
         fname="figures/1958/1958.Scubas.png",
         date_lim=xlim,
         fig_title="SCUBAS, Time: UT since 0 UT on 11 Feb 1958",
-        text_size=10, ylim=[-1000, 2000]
+        text_size=10, ylim=[-3000, 3000]
+    )
+
+    model.plot_profiles(
+        fname="figures/1958/1958.Profiles.png",
+        xlim=[1e-6, 1e-2],
+        tylim=[-90, 90],
+        tyticks=[-90, -45, 0, 45, 90],
+        aylim=[1e-3, 1e0],
+        t_mul=1.0,
+        nrows=2,
+        ncols=4,
+        text_size=15,
+        tag0_loc=[0, 4],
+        tag1_loc=[4, 5, 6, 7],
+        tag2_loc=[3, 7],
+        figsize=(4, 4),
+    )
+    model.plot_e_fields(
+        fname="figures/1958/1958.Scubas.Exfield.png",
+        date_lim=[dt.datetime(1958, 2, 10, 16), dt.datetime(1958, 2, 11, 8)],
+        fig_title=r"$E_x$-field / Time: UT since 16 UT on 10 Feb 1958",
+        text_size=15,
+        ylim=[-1000, 1000],
+        component="X",
+        groups=[[0, 1, 2], [3, 4, 5], [6, 7]],
+    )
+    model.plot_e_fields(
+        fname="figures/1958/1958.Scubas.Eyfield.png",
+        date_lim=[dt.datetime(1958, 2, 10, 16), dt.datetime(1958, 2, 11, 8)],
+        fig_title=r"$E_y$-field / Time: UT since 16 UT on 10 Feb 1958",
+        text_size=15,
+        ylim=[-1000, 1000],
+        component="Y",
+        groups=[[0, 1, 2], [3, 4, 5], [6, 7]],
+    )
+    obs = load_extracted_voltage()
+    model.plot_zoomedin_analysis(
+        fname="figures/1958/1958.Scubas.Compare.png",
+        inputs=obs,
+        date_lims=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)],
+        ylim=[-3000, 3000],
+        interval=30,
+        mult=-1,
     )
     return
 

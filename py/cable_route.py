@@ -212,7 +212,8 @@ def plot_bathymatry(profiles):
 
 if __name__ == "__main__":
     o = get_cable_route()
-    d = calculate_bathymetry_byLITHO1(o)
-    profiles = calculate_conductive_profiles(d)
+    print(len(o.geometry["coordinates"]))
+    # d = calculate_bathymetry_byLITHO1(o)
+    # profiles = calculate_conductive_profiles(d)
     # # plot_routes(o, d)
     # plot_bathymatry(profiles)
