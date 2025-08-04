@@ -300,9 +300,12 @@ class SCUBASModel(object):
             "figures/1989/1989.Error.qq.png",
             "figures/1989/1989.Scores.png",
         ],
+        omni=None,
+        lims=[-400,400],
     ):
-        omni = load_omni(date_lims)
-        omni = omni[(omni.time >= date_lims[0]) & (omni.time <= date_lims[1])]
+        if omni is None:
+            omni = load_omni(date_lims)
+            omni = omni[(omni.time >= date_lims[0]) & (omni.time <= date_lims[1])]
         # Case special
         x = np.array(inputs.Voltage)
         o = self.cable.tot_params.copy()
@@ -325,12 +328,12 @@ class SCUBASModel(object):
         ax.set_xlabel("Error, V", fontsize=12)
         ax.set_ylabel("Counts", fontsize=12)
         ax.tick_params(axis="x", labelsize=12)
-        ax.set_xlim(-400, 400)
+        ax.set_xlim(lims)
         ax.tick_params(axis="y", labelsize=12)
         ax.text(
             0.05,
             0.9,
-            "(A)",
+            "(a)",
             ha="left",
             va="center",
             transform=ax.transAxes,
@@ -338,8 +341,8 @@ class SCUBASModel(object):
         )
 
         ax = sp.axes[1]
-        ax.set_xlim([-400, 400])
-        ax.set_ylim([-400, 400])
+        ax.set_xlim(lims)
+        ax.set_ylim(lims)
         from verify.plot import qqPlot
 
         qqPlot(
@@ -357,7 +360,7 @@ class SCUBASModel(object):
         ax.text(
             0.05,
             0.9,
-            "(B) QQ Plot",
+            "(b) QQ Plot",
             ha="left",
             va="center",
             transform=ax.transAxes,
@@ -377,13 +380,13 @@ class SCUBASModel(object):
             s=4,
         )
         ax.set_xlabel("Observed, V", fontsize=12)
-        ax.set_xlim(-400, 400)
-        ax.set_ylim(-400, 400)
+        ax.set_xlim(lims)
+        ax.set_ylim(lims)
         ax.set_ylabel("Error, V", fontsize=12)
         ax.text(
             0.05,
             0.9,
-            "(C) Residue",
+            "(c) Residue",
             ha="left",
             va="center",
             transform=ax.transAxes,
@@ -399,15 +402,15 @@ class SCUBASModel(object):
             marker="s",
             s=4,
         )
-        ax.set_xlabel("SymH, nT", fontsize=12)
-        ax.set_xlim(-800, 0)
-        ax.set_ylim(-400, 400)
+        ax.set_xlabel("Dst, nT", fontsize=12)
+        ax.set_xlim(-100, 0)
+        ax.set_ylim(lims)
         ax.axhline(0, color="k", lw=0.8, ls="--")
         ax.set_ylabel("Error, V", fontsize=12)
         ax.text(
             0.05,
             0.9,
-            "(D)",
+            "(d)",
             ha="left",
             va="center",
             transform=ax.transAxes,

@@ -72,16 +72,16 @@ _, ax = sp.plot_stack_plots(
 )
 ax.axhline(0, color="black", linestyle="--", linewidth=0.5)
 ax.hlines(Dst1958["DST"].min(), dt.datetime(1958, 2, 11, 4), dt.datetime(1958, 2, 11, 20), color="red", linestyle=":", linewidth=1)
-ax.text(0.95, 0.1, f"(A) Dst$_m$={Dst1958['DST'].min()} nT", ha="right", va="bottom", transform=ax.transAxes)
+ax.text(0.95, 0.1, f"(a) Dst$_m$={Dst1958['DST'].min()} nT", ha="right", va="bottom", transform=ax.transAxes)
 ax.vlines(dt.datetime(1958, 2, 11, 1), -200, 100, color="m", linestyle=":", linewidth=1.5)
 ax.text(dt.datetime(1958, 2, 11, 2), 60, "1 UT (2/11)", ha="left", va="top", color="m")
 ax.tick_params(axis="y", labelcolor="b")
 ax.set_ylabel("Dst (nT)", color="b")
-tax = ax.twinx()
-tax.plot(Ae1958["DATETIME"], Ae1958["AE"], color="orange", linewidth=1)
-tax.set_ylabel("AE (nT)", color="orange")
-tax.tick_params(axis="y", labelcolor="orange")
-tax.set_ylim(0, 3000)
+# tax = ax.twinx()
+# tax.plot(Ae1958["DATETIME"], Ae1958["AE"], color="orange", linewidth=1)
+# tax.set_ylabel("AE (nT)", color="orange")
+# tax.tick_params(axis="y", labelcolor="orange")
+# tax.set_ylim(0, 3000)
 
 
 _, ax = sp.plot_stack_plots(
@@ -98,16 +98,16 @@ _, ax = sp.plot_stack_plots(
 )
 ax.axhline(0, color="black", linestyle="--", linewidth=0.5)
 ax.hlines(Dst1989["DST"].min(), dt.datetime(1989, 3, 13, 18), dt.datetime(1989, 3, 14, 6), color="red", linestyle=":", linewidth=1)
-ax.text(0.95, 0.1, f"(B) Dst$_m$={Dst1989['DST'].min()} nT", ha="right", va="bottom", transform=ax.transAxes)
+ax.text(0.95, 0.1, f"(b) Dst$_m$={Dst1989['DST'].min()} nT", ha="right", va="bottom", transform=ax.transAxes)
 ax.vlines(dt.datetime(1989, 3, 13, 1), -200, 100, color="m", linestyle=":", linewidth=1.5)
 ax.text(dt.datetime(1989, 3, 13, 2), 60, "1 UT (3/13)", ha="left", va="top", color="m")
 ax.tick_params(axis="y", labelcolor="b")
 ax.set_ylabel("Dst (nT)", color="b")
-tax = ax.twinx()
-tax.plot(Ae1989["DATETIME"], Ae1989["AE"], color="orange", linewidth=1)
-tax.set_ylabel("AE (nT)", color="orange")
-tax.tick_params(axis="y", labelcolor="orange")
-tax.set_ylim(0, 3000)
+# tax = ax.twinx()
+# tax.plot(Ae1989["DATETIME"], Ae1989["AE"], color="orange", linewidth=1)
+# tax.set_ylabel("AE (nT)", color="orange")
+# tax.tick_params(axis="y", labelcolor="orange")
+# tax.set_ylim(0, 3000)
 
 sp.save_fig("figures/Dst_StackPlots.png")
 sp.close()
@@ -144,19 +144,26 @@ datasets_1989 = {
 )
 
 datasets_1958 = {
-    "ESK": pd.read_csv("data/1958/compiled.csv", parse_dates=["Date"]),
+    "ESK": pd.read_csv("data/1958/ESK_scaled.csv", parse_dates=["Date"]),
+    "FRD": pd.read_csv("data/1958/FRD_scaled.csv", parse_dates=["Date"]),
 }
 (
-    datasets_1958["ESK"]["H"]
+    datasets_1958["ESK"]["H"],
+    datasets_1958["FRD"]["H"]
 ) = (
     np.sqrt(
         datasets_1958["ESK"]["X"]**2 + datasets_1958["ESK"]["Y"]**2
+    ),
+    np.sqrt(
+        datasets_1958["FRD"]["X"]**2 + datasets_1958["FRD"]["Y"]**2
     )
 )
 (
-    datasets_1958["ESK"]["H"]
+    datasets_1958["ESK"]["H"],
+    datasets_1958["FRD"]["H"],
 ) = (
-    datasets_1958["ESK"]["H"] - np.median(datasets_1958["ESK"]["H"][:60])
+    datasets_1958["ESK"]["H"] - np.median(datasets_1958["ESK"]["H"][:60]),
+    datasets_1958["FRD"]["H"] - np.median(datasets_1958["FRD"]["H"][:60])
 )
 
 sp = StackPlots(
@@ -171,22 +178,33 @@ sp = StackPlots(
 _, ax = sp.plot_stack_plots(
     datasets_1958["ESK"]["Date"].tolist(),
     datasets_1958["ESK"]["H"],
-    text="(A) February 1958",
+    text="(a) February 1958",
     ylabel=r"$B_H$ (nT)",
     color="blue",
-    # xlim=[dt.datetime(1958, 2, 10, 12), dt.datetime(1958, 2, 11, 12)],
+    xlim=[dt.datetime(1958, 2, 11), dt.datetime(1958, 2, 11, 5)],
     ylim=[-1000, 1000],
-    interval=6,
+    interval=1,
     dfx=r"%H",
     label="ESK",
-    xlabel="UT Hours (since 10 February 1958, 12:00 UT)",
+    xlabel="UT Hours (since 11 February 1958, 0 UT)",
+)
+sp.plot_stack_plots(
+    datasets_1958["FRD"]["Date"].tolist(),
+    datasets_1958["FRD"]["H"],
+    color="red",
+    xlim=[dt.datetime(1958, 2, 11), dt.datetime(1958, 2, 11, 5)],
+    interval=1,
+    ax=ax,
+    label="FRD",
+    ylim=[-1000, 1000],
+    dfx=r"%H",
 )
 ax.legend(loc=2)
 
 _, ax = sp.plot_stack_plots(
     datasets_1989["FRD"]["Date"].tolist(),
     datasets_1989["FRD"]["H"],
-    text="(B) March 1989",
+    text="(b) March 1989",
     ylabel=r"$B_H$ (nT)",
     color="blue",
     xlim=[dt.datetime(1989, 3, 12), dt.datetime(1989, 3, 15)],
@@ -290,10 +308,10 @@ ax0.set_xticklabels([])
 ax1.set_xlim([dt.datetime(1989, 3, 12, 12), dt.datetime(1989, 3, 15)])
 ax1.set_yticklabels([])
 ax0.text(
-    0.1, 0.95, "(B-1) March 1989", ha="left", va="top", transform=ax0.transAxes
+    0.1, 0.95, "(b-1) March 1989", ha="left", va="top", transform=ax0.transAxes
 )
 ax1.text(
-    0.1, 0.95, "(B-2)", ha="left", va="top", transform=ax1.transAxes
+    0.1, 0.95, "(b-2)", ha="left", va="top", transform=ax1.transAxes
 )
 ax0.vlines(
     dt.datetime(1989, 3, 13, 1), 2000, 2500, color="b", linestyle="-", linewidth=1
@@ -330,8 +348,8 @@ ax0.set_ylabel(r"$E_x$, mv/km")
 ax0.xaxis.set_major_locator(mdates.HourLocator(interval=6))
 ax0.xaxis.set_major_formatter(mdates.DateFormatter("$%H^{%M}$"))
 ax1.set_ylabel(r"$E_y$, mv/km")
-ax1.set_xlabel("UT Hours (since 10 February 1958, 12:00 UT)",)
-ax1.xaxis.set_major_locator(mdates.HourLocator(interval=6))
+ax1.set_xlabel("UT Hours (since 11 February 1958, 0 UT)",)
+ax1.xaxis.set_major_locator(mdates.HourLocator(interval=1))
 ax1.xaxis.set_major_formatter(mdates.DateFormatter("$%H^{%M}$"))
 for l in range(8):
     ex, ey = efields[f"E.X.{l:02d}"], efields[f"E.Y.{l:02d}"]
@@ -340,7 +358,7 @@ for l in range(8):
         color="k"
     )
     ax0.text(
-        dt.datetime(1958, 2, 11,), (l*2000)+np.median(ex), datasets_1958["tags"][l],
+        dt.datetime(1958, 2, 11, 4), (l*2000)+np.median(ex), datasets_1958["tags"][l],
         ha="right", va="top",
         fontsize=8, color="r"
     )
@@ -349,46 +367,46 @@ for l in range(8):
         color="k"
     )
     ax1.text(
-        dt.datetime(1958, 2, 11,), (l*2000)+np.median(ey), datasets_1958["tags"][l],
+        dt.datetime(1958, 2, 11, 4), (l*2000)+np.median(ey), datasets_1958["tags"][l],
         ha="right", va="top",
         fontsize=8, color="r"
     )
     pass
-ax0.set_xlim([dt.datetime(1958, 2, 10, 16), dt.datetime(1958, 2, 11, 8)])
+ax0.set_xlim([dt.datetime(1958, 2, 11), dt.datetime(1958, 2, 11, 5)])
 ax0.set_yticklabels([])
 ax0.set_xticklabels([])
-ax1.set_xlim([dt.datetime(1958, 2, 10, 16), dt.datetime(1958, 2, 11, 8)])
+ax1.set_xlim([dt.datetime(1958, 2, 11), dt.datetime(1958, 2, 11, 5)])
 ax1.set_yticklabels([])
 ax0.text(
-    0.1, 0.95, "(A-1) March 1958", ha="left", va="top", transform=ax0.transAxes
+    0.1, 0.95, "(a-1) March 1958", ha="left", va="top", transform=ax0.transAxes
 )
 ax1.text(
-    0.1, 0.95, "(A-2)", ha="left", va="top", transform=ax1.transAxes
+    0.1, 0.95, "(a-2)", ha="left", va="top", transform=ax1.transAxes
 )
 ax0.vlines(
-    dt.datetime(1958, 2, 10, 20), 2000, 4000, color="b", linestyle="-", linewidth=1
+    dt.datetime(1958, 2, 11, 1), 2000, 4000, color="b", linestyle="-", linewidth=1
 )
 ax0.hlines(
-    2000, dt.datetime(1958, 2, 10, 19, 45), dt.datetime(1958, 2, 10, 20, 15), color="b", linestyle="-", linewidth=1
+    2000, dt.datetime(1958, 2, 11, 0, 50), dt.datetime(1958, 2, 11, 1, 10), color="b", linestyle="-", linewidth=1
 )
 ax0.hlines(
-    4000, dt.datetime(1958, 2, 10, 19, 45), dt.datetime(1958, 2, 10, 20, 15), color="b", linestyle="-", linewidth=1
+    4000, dt.datetime(1958, 2, 11, 0, 50), dt.datetime(1958, 2, 11, 1, 10), color="b", linestyle="-", linewidth=1
 )
 ax0.text(
-    dt.datetime(1958, 2, 10, 21), 3000, "2000 mv/km", color="b", ha="left", va="center"
+    dt.datetime(1958, 2, 11, 1, 20), 3000, "2000 mv/km", color="b", ha="left", va="center"
 )
 
 ax1.vlines(
-    dt.datetime(1958, 2, 10, 20), 2000, 4000, color="b", linestyle="-", linewidth=1
+    dt.datetime(1958, 2, 11, 1), 2000, 4000, color="b", linestyle="-", linewidth=1
 )
 ax1.hlines(
-    2000, dt.datetime(1958, 2, 10, 19, 45), dt.datetime(1958, 2, 10, 20, 15), color="b", linestyle="-", linewidth=1
+    2000, dt.datetime(1958, 2, 11, 0, 50), dt.datetime(1958, 2, 11, 1, 10), color="b", linestyle="-", linewidth=1
 )
 ax1.hlines(
-    4000, dt.datetime(1958, 2, 10, 19, 45), dt.datetime(1958, 2, 10, 20, 15), color="b", linestyle="-", linewidth=1
+    4000, dt.datetime(1958, 2, 11, 0, 50), dt.datetime(1958, 2, 11, 1, 10), color="b", linestyle="-", linewidth=1
 )
 ax1.text(
-    dt.datetime(1958, 2, 10, 21), 3000, "2000 mv/km", color="b", ha="left", va="center"
+    dt.datetime(1958, 2, 11, 1, 20), 3000, "2000 mv/km", color="b", ha="left", va="center"
 )
 
 sp.save_fig("figures/E-fields.png")

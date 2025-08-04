@@ -290,7 +290,7 @@ def create_new_pane(
     central_longitude=-70,
     central_latitude=0.30,
     darray=20,
-    cx=[0.15, 0.15, 0.3, 0.03],
+    cx=[0.92, 0.3, 0.03, 0.3],  # Changed colorbar location to right side
 ):
     ##############################################################
     # Download GEBCO data from https://www.gebco.net/data_and_products/gridded_bathymetry_data/
@@ -356,20 +356,20 @@ def create_new_pane(
     ax.overaly_coast_lakes(lw=0.4, alpha=0.4)
     ax.add_feature(cartopy.feature.LAND, facecolor="lightgray", lw=0.4)
     ax.text(
-        -0.02,
+        -0.05,
         0.99,
-        "Coord: Geo",
-        ha="center",
+        "Coord: Geo",  # Changed to right side of figure
+        ha="left",
         va="top",
         transform=ax.transAxes,
         fontsize=12,
         rotation=90,
     )
     ax.text(
-        0.05,
+        0.95,
         1.05,
         "",  # (f"{date_string(date)}"),
-        ha="left",
+        ha="right",
         va="center",
         transform=ax.transAxes,
         fontsize=8,
