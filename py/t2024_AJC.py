@@ -145,15 +145,12 @@ def get_bathymetry(
         Bathymetry analysis object, segment coordinates, and segment definitions.
     """
     segments = [
-        (0, 26),
-        (26, 300),
-        (300, 410),
-        (410, 600),
-        (600, 670),
-        (670, 780),
-        (780, 860),
-        (860, 885),
-        (885, -1),
+        (0, 10),
+        (10, 160),
+        (160, 220),
+        (220, 300),
+        (300, 350),
+        (350, -1),
     ]
     colors = [
         "tab:blue",
@@ -178,11 +175,23 @@ def get_bathymetry(
         "darkkhaki",
     ]
     # Initialize and use the BathymetryAnalysis class
+    # bathymetry = BathymetryAnalysis(file_path, segments, colors)
+    # bathymetry.load_data()
+    # bathymetry.plot_bathymetry("figures/2024/AJC/bathymetry_AJC.png", names=names)
+    # segment_coordinates = bathymetry.get_segment_coordinates()
+    # print("Segment Coordinates:", segment_coordinates)
     bathymetry = BathymetryAnalysis(file_path, segments, colors)
     bathymetry.load_data()
-    bathymetry.plot_bathymetry("figures/2024/AJC/bathymetry_AJC.png", names=names)
-    segment_coordinates = bathymetry.get_segment_coordinates()
-    print("Segment Coordinates:", segment_coordinates)
+    bathymetry.plot_bathymetry(
+        "figures/2024/AJC/bathymetry_AJC.png",
+        names=names,
+        xticks=[0, 500, 1000, 2000, 3000, 8000],
+        xlim=[0, bathymetry.bathymetry_data.distance.iloc[-1] / 1e3],
+        ylim=[-8, 0.5],
+        yticks=[-8, -6, -4, -2, -1, -0.5, 0],
+        yticklabels=[8, 6, 4, 2, 1, 0.5, 0],
+    )
+    segment_coordinates = np.array(bathymetry.get_segment_coordinates())
     return bathymetry, segment_coordinates, segments
 
 
@@ -238,25 +247,19 @@ def compile_2024_AJC():
         "DO-1",
         "DO-2",
         "DO-3",
-        "RDG-1",
         "DO-4",
-        "RDG-2",
         "DO-5",
-        "DO-6",
-        "CS-A",
+        "RDG-1",
     ]
     _ = read_dataset()
     bathymetry, segment_coordinates, segments = get_bathymetry(names)
     stns = [
         "KAK",
         "KAK",
+        "KAK",
         "GUA",
         "GUA",
         "GUA",
-        "CTA",
-        "CTA",
-        "CNB",
-        "CNB",
     ]
     segment_files = [dSegmented_files_map[s] for s in stns]
     profiles = get_conductivity_profile(
@@ -274,19 +277,17 @@ def compile_2024_AJC():
         segment_files=segment_files,
     )
     model.read_stations(
-        ["KAK", "GUA", "CTA", "CNB"],
+        ["KAK", "GUA"],
         [
             dSegmented_files_map["KAK"],
             dSegmented_files_map["GUA"],
-            dSegmented_files_map["CTA"],
-            dSegmented_files_map["CNB"],
         ],
         clean=False,
     )
     model.initialize_TL()
     model.run_cable_segment()
 
-    # # Generate plots
+    # # # Generate plots
     model.plot_TS_with_others(
         fname="figures/2024/AJC/2024.Scubas.png",
         date_lim=[dt.datetime(2024, 5, 10, 12), dt.datetime(2024, 5, 12)],
@@ -294,36 +295,36 @@ def compile_2024_AJC():
         text_size=10,
         ylim=[-50, 50],
     )
-    model.plot_profiles(
-        fname="figures/2024/AJC/2024.Profiles.png",
-        xlim=[1e-6, 1e-2],
-        tylim=[-90, 90],
-        tyticks=[-90, -45, 0, 45, 90],
-        aylim=[1e-3, 1e0],
-        t_mul=1e-3,
-        nrows=3,
-        ncols=3,
-    )
-    model.plot_e_fields(
-        fname="figures/2024/AJC/2024.Scubas.Exfield.png",
-        date_lim=[dt.datetime(2024, 5, 10, 12), dt.datetime(2024, 5, 12)],
-        fig_title=r"$E_x$-field / Time: UT since 12 UT on 10 May 2024",
-        text_size=15,
-        ylim=[-100, 100],
-        nrows=3,
-        component="X",
-        groups=[[0, 1, 2], [3, 4, 5], [6, 7, 8]],
-    )
-    model.plot_e_fields(
-        fname="figures/2024/AJC/2024.Scubas.Eyfield.png",
-        date_lim=[dt.datetime(2024, 5, 10, 12), dt.datetime(2024, 5, 12)],
-        fig_title=r"$E_y$-field / Time: UT since 12 UT on 10 May 2024",
-        text_size=15,
-        nrows=3,
-        ylim=[-100, 100],
-        component="Y",
-        groups=[[0, 1, 2], [3, 4, 5], [6, 7, 8]],
-    )
+    # model.plot_profiles(
+    #     fname="figures/2024/AJC/2024.Profiles.png",
+    #     xlim=[1e-6, 1e-2],
+    #     tylim=[-90, 90],
+    #     tyticks=[-90, -45, 0, 45, 90],
+    #     aylim=[1e-3, 1e0],
+    #     t_mul=1e-3,
+    #     nrows=3,
+    #     ncols=3,
+    # )
+    # model.plot_e_fields(
+    #     fname="figures/2024/AJC/2024.Scubas.Exfield.png",
+    #     date_lim=[dt.datetime(2024, 5, 10, 12), dt.datetime(2024, 5, 12)],
+    #     fig_title=r"$E_x$-field / Time: UT since 12 UT on 10 May 2024",
+    #     text_size=15,
+    #     ylim=[-100, 100],
+    #     nrows=3,
+    #     component="X",
+    #     groups=[[0, 1, 2], [3, 4, 5], [6, 7, 8]],
+    # )
+    # model.plot_e_fields(
+    #     fname="figures/2024/AJC/2024.Scubas.Eyfield.png",
+    #     date_lim=[dt.datetime(2024, 5, 10, 12), dt.datetime(2024, 5, 12)],
+    #     fig_title=r"$E_y$-field / Time: UT since 12 UT on 10 May 2024",
+    #     text_size=15,
+    #     nrows=3,
+    #     ylim=[-100, 100],
+    #     component="Y",
+    #     groups=[[0, 1, 2], [3, 4, 5], [6, 7, 8]],
+    # )
     # obs = load_extracted_voltage()
     # model.plot_zoomedin_analysis(
     #     fname="figures/1958/1958.Scubas.Compare.png",

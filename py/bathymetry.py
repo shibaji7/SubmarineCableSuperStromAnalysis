@@ -28,15 +28,12 @@ def plot_profiles(file_path, segments, colors, plot_file, names):
 def get_AJC_segments(gtype="lat"):
     file_path = "data/2024/AJC/lat_long_bathymetry.csv"
     segments = [
-        (0, 26),
-        (26, 300),
-        (300, 410),
-        (410, 600),
-        (600, 670),
-        (670, 780),
-        (780, 860),
-        (860, 885),
-        (885, -1),
+        (0, 10),
+        (10, 160),
+        (160, 220),
+        (220, 300),
+        (300, 350),
+        (350, -1),
     ]
     colors = [
         "tab:blue",
@@ -60,24 +57,21 @@ def get_AJC_segments(gtype="lat"):
         "salmon",
         "darkkhaki",
     ]
-    # Initialize and use the BathymetryAnalysis class
-    bathymetry = BathymetryAnalysis(file_path, segments, colors)
-    bathymetry.load_data()
     names = [
         "DO-1",
         "DO-2",
         "DO-3",
-        "RDG-1",
         "DO-4",
-        "RDG-2",
         "DO-5",
-        "DO-6",
-        "CS-A",
+        "RDG-1",
     ]
+    # Initialize and use the BathymetryAnalysis class
+    bathymetry = BathymetryAnalysis(file_path, segments, colors)
+    bathymetry.load_data()
     bathymetry.plot_bathymetry(
         "figures/2024/AJC/bathymetry_AJC.png",
         names=names,
-        xticks=[0, 500, 1000, 2000, 4000, 8000],
+        xticks=[0, 500, 1000, 2000, 3000, 8000],
         xlim=[0, bathymetry.bathymetry_data.distance.iloc[-1] / 1e3],
         ylim=[-8, 0.5],
         yticks=[-8, -6, -4, -2, -1, -0.5, 0],
