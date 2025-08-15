@@ -253,7 +253,7 @@ def find_nearby_coordinates(cords, lat=13.3824, lon=144.6973):
     cords = cords[:d_arg_min]
     return cords
 
-def compute_bathy_profile(points):
+def compute_bathy_profile(points, file="data/2024/AJC/lat_long_bathymetry.csv"):
     from scubas.conductivity import ConductivityProfile
     
     cp = ConductivityProfile()
@@ -279,7 +279,7 @@ def compute_bathy_profile(points):
         })
     records = pd.DataFrame.from_records(records)
     records.cum_dist_from_00 = np.cumsum(records.cum_dist_from_00)
-    records.to_csv("data/2024/AJC/lat_long_bathymetry.csv")
+    records.to_csv(file)
     return
 
 def find_AJC_location_by_GUAM():
@@ -299,5 +299,26 @@ def find_AJC_location_by_GUAM():
     plot_bathymatry(profiles)
     return
 
+def generate_bath_profile_TAT_8():
+    sections = [
+        dict(lat=39.6, lon=-74.33),
+        dict(lat=38.79, lon=-72.62),
+        dict(lat=37.11, lon=-68.94),
+        dict(lat=39.80, lon=-48.20),
+        dict(lat=40.81, lon=-45.19),
+        dict(lat=43.15, lon=-39.16),
+        dict(lat=44.83, lon=-34.48),
+        dict(lat=46.51, lon=-22.43),
+        dict(lat=47.85, lon=-9.05),
+        dict(lat=50.79, lon=-4.55),
+    ]
+    points = []
+    for b in range(9):
+        start, end = sections[b], sections[b+1]
+        points += generate_gc_points_geo(start["lat"], start["lon"], end["lat"], end["lon"])
+    compute_bathy_profile(points, "data/1989/lat_long_bathymetry.csv")
+    return
+
 if __name__ == "__main__":
-    find_AJC_location_by_GUAM()
+    # find_AJC_location_by_GUAM()
+    generate_bath_profile_TAT_8()

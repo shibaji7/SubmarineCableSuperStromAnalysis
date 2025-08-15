@@ -5,6 +5,7 @@ import datetime as dt
 import pandas as pd
 import numpy as np
 import matplotlib.dates as mdates
+from geopy.distance import great_circle as GC
 
 
 datasets_1989 = dict(
@@ -129,4 +130,177 @@ ax0.text(0.1, 0.3, "MdPE: {:.2f}%".format(np.abs(mdpe) * 100), ha="left", va="to
 
 
 sp.save_fig("figures/VoltsTAT1.png")
+sp.close()
+
+
+# Plot E-field datasets
+sp = StackPlots(
+    nrows=2,
+    ncols=1,
+    datetime=True,
+    figsize=(6, 3),
+    text_size=12,
+    sharex=False,
+)
+ax0, ax1 = sp.axes[0], sp.axes[1]
+xlim=[0, 3900]
+xticks=[0, 500, 2000, 3900]
+ylim=[-5, 0.5]
+yticks=[-5, -4, -3, -2, -1, -0.5]
+yticklabels=[5, 4, 3, 2, 1, 0.5]
+ax0.set_xticks(xticks)
+#ax0.set_xlabel("Distance, km")
+ax0.set_xlim(xlim)
+ax0.axhline(0, ls="--", lw=0.4, color="b", alpha=0.7)
+ax0.set_ylim(ylim)
+ax0.set_yticks(yticks)
+ax0.set_yticklabels(yticklabels)
+ax0.set_ylabel("Depths, km")
+segments = [
+    (0, 32),
+    (32, 50),
+    (50, 60),
+    (60, 170),
+    (170, 330),
+    (330, 410),
+    (410, 435),
+    (435, -1),
+]
+bathymetry_data = pd.read_csv("data/1958/lat_long_bathymetry.csv")
+bathymetry_data["cum_dist_from_00"] = 0.0
+for i in range(1, len(bathymetry_data)):
+    # Calculate distance using geopy's great_circle function
+    bathymetry_data.loc[i, "cum_dist_from_00"] = GC(
+        (
+            bathymetry_data["lat"].iloc[i - 1],
+            bathymetry_data["lon"].iloc[i - 1],
+        ),
+        (
+            bathymetry_data["lat"].iloc[i],
+            bathymetry_data["lon"].iloc[i],
+        ),
+    ).meters
+    # Calculate cumulative distance
+    bathymetry_data.loc[i, "cum_dist_from_00"] += bathymetry_data[
+        "cum_dist_from_00"
+    ].iloc[i - 1]
+ax0.plot(
+    bathymetry_data.cum_dist_from_00 / 1e3,
+    -1 * bathymetry_data["bathymetry.meters"] / 1e3,
+    color="k",
+    lw=0.6,
+)
+names = ["CS-W", "DO-1", "DO-2", "DO-3", "DO-4", "MAR", "DO-5", "CS-E"]
+dist, depth = [], []
+# Plot each segment with a different color
+for i, seg in enumerate(segments):
+    segment_data = bathymetry_data.iloc[seg[0] : seg[1]]
+    dist.append(segment_data.cum_dist_from_00.tolist()[0] / 1e3)
+    depth.append(segment_data["bathymetry.meters"].mean() / 1e3)
+    ax0.plot(
+        segment_data.cum_dist_from_00 / 1e3,
+        -1 * segment_data["bathymetry.meters"] / 1e3,
+        marker=".",
+        ls="None",
+        ms=1.2,
+        color="r",
+    )
+    print(len(names) , len(segments))
+    if len(names) == len(segments):
+        ax0.text(
+            segment_data.cum_dist_from_00.mean() / 1e3,
+            -(segment_data["bathymetry.meters"].mean() / 1e3) - 0.1,
+            names[i],
+            ha="center",
+            va="top",
+            rotation=90,
+            fontdict=dict(size=10, color="b"),
+        )
+dist.append(bathymetry_data.cum_dist_from_00.iloc[-1] / 1e3)
+depth.append(bathymetry_data["bathymetry.meters"].iloc[-1] / 1e3)
+depth = np.array(depth)
+depth[depth > 0] = depth[depth > 0] * -1
+ax0.step(
+    dist,
+    depth,
+    where="post",
+    ls="-",
+    lw=1.5,
+    color="k",
+)
+ax0.text(0.05, 0.95, "(A) TAT-1", ha="left", va="top", transform=ax0.transAxes)
+
+xlim=[0, 6000]
+xticks=[0, 500, 2000, 4000, 6000]
+ylim=[-6, 0.5]
+yticks=[-6, -4, -2, -1, -0.5]
+yticklabels=[6, 4, 2, 1, 0.5]
+ax1.set_xticks(xticks)
+ax1.set_xlabel("Distance, km")
+ax1.set_xlim(xlim)
+ax1.axhline(0, ls="--", lw=0.4, color="b", alpha=0.7)
+ax1.set_ylim(ylim)
+ax1.set_yticks(yticks)
+ax1.set_yticklabels(yticklabels)
+ax1.set_ylabel("Depths, km")
+bathymetry_data = pd.read_csv("data/1989/lat_long_bathymetry.csv")
+ax1.plot(
+    bathymetry_data.cum_dist_from_00 ,
+    -1 * bathymetry_data["bathymetry.meters"] / 1e3,
+    color="k",
+    lw=0.6,
+)
+print(bathymetry_data["bathymetry.meters"].head())
+segments = [
+    (0, 15),
+    (15, 50),
+    (50, 245),
+    (245, 270),
+    (270, 330),
+    (330, 380),
+    (380, 480),
+    (480, 570),
+    (570, -1),
+]
+names = ["CS-W", "DO-1", "DO-2", "DO-3", "DO-4", "DO-5", "MAR", "DO-6", "CS-E"]
+dist, depth = [], []
+# Plot each segment with a different color
+for i, seg in enumerate(segments):
+    segment_data = bathymetry_data.iloc[seg[0] : seg[1]]
+    dist.append(segment_data.cum_dist_from_00.tolist()[0])
+    depth.append(segment_data["bathymetry.meters"].mean() / 1e3)
+    ax1.plot(
+        segment_data.cum_dist_from_00,
+        -1 * segment_data["bathymetry.meters"] / 1e3,
+        marker=".",
+        ls="None",
+        ms=1.2,
+        color="r",
+    )
+    print(len(names) , len(segments))
+    if len(names) == len(segments):
+        ax1.text(
+            segment_data.cum_dist_from_00.mean(),
+            -(segment_data["bathymetry.meters"].mean() / 1e3) - 0.1,
+            names[i],
+            ha="center",
+            va="top",
+            rotation=90,
+            fontdict=dict(size=10, color="b"),
+        )
+dist.append(bathymetry_data.cum_dist_from_00.iloc[-1])
+depth.append(bathymetry_data["bathymetry.meters"].iloc[-1] / 1e3)
+depth = np.array(depth)
+depth[depth > 0] = depth[depth > 0] * -1
+ax1.step(
+    dist,
+    depth,
+    where="post",
+    ls="-",
+    lw=1.5,
+    color="k",
+)
+ax1.text(0.05, 0.95, "(B) TAT-8", ha="left", va="top", transform=ax1.transAxes)
+
+sp.save_fig("Validation/Figure02.png")
 sp.close()

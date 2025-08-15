@@ -182,6 +182,7 @@ class BathymetryAnalysis:
         ylim=[-5, 0.5],
         yticks=[-5, -4, -3, -2, -1, -0.5],
         yticklabels=[5, 4, 3, 2, 1, 0.5],
+        ax = None
     ):
         """
         Plot the bathymetry data with segments and save the figure.
@@ -194,7 +195,10 @@ class BathymetryAnalysis:
         if self.bathymetry_data is None:
             raise ValueError("Bathymetry data not loaded. Call load_data() first.")
 
-        fig, ax = plt.subplots(dpi=dpi, figsize=figsize, nrows=1, ncols=1)
+        save = True
+        if ax is None:
+            fig, ax = plt.subplots(dpi=dpi, figsize=figsize, nrows=1, ncols=1)
+            save = False
 
         # Plot the full bathymetry data
         ax.plot(
@@ -269,9 +273,11 @@ class BathymetryAnalysis:
         ax.set_yticklabels(yticklabels)
         ax.set_ylabel("Depths, km")
 
-        # Save the figure
-        fig.savefig(output_path, bbox_inches="tight", dpi=dpi)
-        plt.close(fig)
+
+        if save:
+            # Save the figure
+            fig.savefig(output_path, bbox_inches="tight", dpi=dpi)
+            plt.close(fig)
         return
 
     def get_segment_coordinates(self):

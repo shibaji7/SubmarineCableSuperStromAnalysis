@@ -30,7 +30,7 @@ import pandas as pd  # type: ignore
 from bathymetry import BathymetryAnalysis
 from cable import SCUBASModel
 from loguru import logger  # type: ignore
-from scubas.datasets import Site
+from scubas.datasets import Site, PROFILES
 from utils import StackPlots, create_from_lat_lon, get_cable_informations, read_iaga
 
 station_maps = dict(
@@ -219,6 +219,7 @@ def get_conductivity_profile(dSegments, segments, bth):
     for j, p, seg in zip(range(len(profiles)), profiles, segments):
         o = bth.iloc[seg[0] : seg[1]]
         depth = np.median(o["bathymetry.meters"])
+        print("in meters>>>>>>>>", depth)
         p.layers[0].thickness = depth  # in meters
         # All layers in meters
     return profiles
@@ -270,6 +271,8 @@ def compile_2024_AJC():
         segment_coordinates,
         profiles,
         names=names,
+        left_active_termination=PROFILES.LD,
+        right_active_termination=PROFILES.LD,
     )
     model = SCUBASModel(
         cable_name="AJC",
@@ -293,7 +296,7 @@ def compile_2024_AJC():
         date_lim=[dt.datetime(2024, 5, 10, 12), dt.datetime(2024, 5, 12)],
         fig_title="SCUBAS / Time, UT since 12 UT on 10 May 2024",
         text_size=10,
-        ylim=[-50, 50],
+        ylim=[-15, 15],
     )
     # model.plot_profiles(
     #     fname="figures/2024/AJC/2024.Profiles.png",
