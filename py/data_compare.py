@@ -230,7 +230,7 @@ ax0.step(
 )
 ax0.text(0.05, 0.95, "(A) TAT-1", ha="left", va="top", transform=ax0.transAxes)
 
-xlim=[0, 6000]
+xlim=[0, 7200]
 xticks=[0, 500, 2000, 4000, 6000]
 ylim=[-6, 0.5]
 yticks=[-6, -4, -2, -1, -0.5]
@@ -243,24 +243,41 @@ ax1.set_ylim(ylim)
 ax1.set_yticks(yticks)
 ax1.set_yticklabels(yticklabels)
 ax1.set_ylabel("Depths, km")
-bathymetry_data = pd.read_csv("data/1989/lat_long_bathymetry.csv")
+bathymetry_data = pd.read_csv("data/1989/2025closest_lat_long_depth.csv")
+bathymetry_data["cum_dist_from_00"] = 0.0
+for i in range(1, len(bathymetry_data)):
+    # Calculate distance using geopy's great_circle function
+    bathymetry_data.loc[i, "cum_dist_from_00"] = GC(
+        (
+            bathymetry_data["lat"].iloc[i - 1],
+            bathymetry_data["lon"].iloc[i - 1],
+        ),
+        (
+            bathymetry_data["lat"].iloc[i],
+            bathymetry_data["lon"].iloc[i],
+        ),
+    ).meters
+    # Calculate cumulative distance
+    bathymetry_data.loc[i, "cum_dist_from_00"] += bathymetry_data[
+        "cum_dist_from_00"
+    ].iloc[i - 1]
+bathymetry_data.cum_dist_from_00 = bathymetry_data.cum_dist_from_00/1e3
 ax1.plot(
-    bathymetry_data.cum_dist_from_00 ,
-    -1 * bathymetry_data["bathymetry.meters"] / 1e3,
+    bathymetry_data.cum_dist_from_00,
+    -1*bathymetry_data["depths"] / 1e3,
     color="k",
     lw=0.6,
 )
-print(bathymetry_data["bathymetry.meters"].head())
 segments = [
     (0, 15),
     (15, 50),
-    (50, 245),
-    (245, 270),
-    (270, 330),
-    (330, 380),
-    (380, 480),
-    (480, 570),
-    (570, -1),
+    (50, 260),
+    (260, 290),
+    (290, 350),
+    (350, 400),
+    (400, 520),
+    (520, 655),
+    (655, -1),
 ]
 names = ["CS-W", "DO-1", "DO-2", "DO-3", "DO-4", "DO-5", "MAR", "DO-6", "CS-E"]
 dist, depth = [], []
@@ -268,10 +285,10 @@ dist, depth = [], []
 for i, seg in enumerate(segments):
     segment_data = bathymetry_data.iloc[seg[0] : seg[1]]
     dist.append(segment_data.cum_dist_from_00.tolist()[0])
-    depth.append(segment_data["bathymetry.meters"].mean() / 1e3)
+    depth.append(-1*segment_data["depths"].mean() / 1e3)
     ax1.plot(
         segment_data.cum_dist_from_00,
-        -1 * segment_data["bathymetry.meters"] / 1e3,
+        -1*segment_data["depths"] / 1e3,
         marker=".",
         ls="None",
         ms=1.2,
@@ -281,7 +298,7 @@ for i, seg in enumerate(segments):
     if len(names) == len(segments):
         ax1.text(
             segment_data.cum_dist_from_00.mean(),
-            -(segment_data["bathymetry.meters"].mean() / 1e3) - 0.1,
+            -1*(segment_data["depths"].mean() / 1e3) - 0.1,
             names[i],
             ha="center",
             va="top",
@@ -289,7 +306,7 @@ for i, seg in enumerate(segments):
             fontdict=dict(size=10, color="b"),
         )
 dist.append(bathymetry_data.cum_dist_from_00.iloc[-1])
-depth.append(bathymetry_data["bathymetry.meters"].iloc[-1] / 1e3)
+depth.append(-1*bathymetry_data["depths"].iloc[-1] / 1e3)
 depth = np.array(depth)
 depth[depth > 0] = depth[depth > 0] * -1
 ax1.step(
