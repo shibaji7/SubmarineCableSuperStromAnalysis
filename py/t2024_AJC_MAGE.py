@@ -35,31 +35,27 @@ from utils import StackPlots, create_from_lat_lon, get_cable_informations, read_
 
 station_maps = dict(
     CNB=[
-        "data/2024/AJC/CNB/cnb20240510qmin.min",
-        "data/2024/AJC/CNB/cnb20240511qmin.min",
+        "data/2024/AJC/MAGE/CNB_May2024.csv",
     ],
     CTA=[
-        "data/2024/AJC/CTA/cta20240510qmin.min",
-        "data/2024/AJC/CTA/cta20240511qmin.min",
+        "data/2024/AJC/MAGE/CTA_May2024.csv",
     ],
     GUA=[
-        "data/2024/AJC/GUA/gua20240510qmin.min",
-        "data/2024/AJC/GUA/gua20240511qmin.min",
+        "data/2024/AJC/MAGE/GUA_May2024.csv",
     ],
     KAK=[
-        "data/2024/AJC/KAK/kak20240510qmin.min",
-        "data/2024/AJC/KAK/kak20240511qmin.min",
+        "data/2024/AJC/MAGE/KAK_May2024.csv",
     ],
 )
 dSegmented_files_map = dict(
-    KAK=[f"figures/2024/AJC/KAK.csv"],
-    GUA=[f"figures/2024/AJC/GUA.csv"],
-    CTA=[f"figures/2024/AJC/CTA.csv"],
-    CNB=[f"figures/2024/AJC/CNB.csv"],
+    KAK=[f"figures/2024/AJC_MAGE/KAK.csv"],
+    GUA=[f"figures/2024/AJC_MAGE/GUA.csv"],
+    CTA=[f"figures/2024/AJC_MAGE/CTA.csv"],
+    CNB=[f"figures/2024/AJC_MAGE/CNB.csv"],
 )
 import os
 
-os.makedirs("figures/2024/AJC/", exist_ok=True)
+os.makedirs("figures/2024/AJC_MAGE/", exist_ok=True)
 
 
 def read_dataset() -> pd.DataFrame:
@@ -83,25 +79,28 @@ def read_dataset() -> pd.DataFrame:
     for stn in stns:
         files = station_maps[stn]
         files.sort()
-        frames[stn] = pd.concat([read_iaga(f) for f in files])
+        frames[stn] = pd.concat([pd.read_csv(f) for f in files])
+        frames[stn].rename(columns=dict(dB_Z="Z", dB_E="X", dB_N="Y"), inplace=True)
+        frames[stn]["Date"] = [
+            dt.datetime(2024, 5, 10) + dt.timedelta(minutes=i) for i in range(len(frames[stn]))
+        ]
 
     # Plot processed data
     sp = StackPlots(nrows=4, ncols=1, datetime=True, figsize=(8, 3), text_size=12)
     for stn in stns:
         data = frames[stn]
-        data.drop_duplicates().sort_index(inplace=True)
         _, ax = sp.plot_stack_plots(
-            data.index,
+            data.Date,
             data.X - np.median(data.X.iloc[:60]),
-            ylim=[-500, 500],
+            ylim=[-100, 100],
             label=r"$B_x$",
             xlim=[dt.datetime(2024, 5, 10, 12), dt.datetime(2024, 5, 12)],
             interval=6,
         )
         sp.plot_stack_plots(
-            data.index,
+            data.Date,
             data.Y - np.median(data.Y.iloc[:60]),
-            ylim=[-500, 500],
+            ylim=[-100, 100],
             label=r"$B_y$",
             color="r",
             xlim=[dt.datetime(2024, 5, 10, 12), dt.datetime(2024, 5, 12)],
@@ -109,9 +108,9 @@ def read_dataset() -> pd.DataFrame:
             interval=6,
         )
         sp.plot_stack_plots(
-            data.index,
+            data.Date,
             data.Z - np.median(data.Z.iloc[:60]),
-            ylim=[-500, 500],
+            ylim=[-100, 100],
             label=r"$B_z$",
             xlabel="Time, UT",
             color="k",
@@ -120,10 +119,10 @@ def read_dataset() -> pd.DataFrame:
             ax=ax,
             interval=6,
         )
-        data.reset_index(inplace=True)
-        data.to_csv(f"figures/2024/AJC/{stn}.csv", index=False, header=True)
+        data["F"] = np.sqrt(data.X**2+data.Y**2+data.Z**2)
+        data[["Date","X","Y","Z","F"]].to_csv(f"figures/2024/AJC_MAGE/{stn}.csv", index=False, header=True)
         ax.legend(loc=2, fontsize=12)
-        sp.save_fig("figures/2024/AJC/2024.data.png")
+        sp.save_fig("figures/2024/AJC_MAGE/2024.data.png")
         sp.close()
     return
 
@@ -254,7 +253,7 @@ def load_extracted_voltage(
     return df
 
 
-def compile_2024_AJC():
+def compile_2024_AJC_MAGE():
     """
     Main function to run the SCUBAS model for the 1958 superstorm.
 
@@ -315,57 +314,58 @@ def compile_2024_AJC():
 
     # # # Generate plots
     model.plot_TS_with_others(
-        fname="figures/2024/AJC/2024.Scubas.png",
+        fname="figures/2024/AJC_MAGE/2024.Scubas.png",
         date_lim=[dt.datetime(2024, 5, 10, 12), dt.datetime(2024, 5, 12)],
         fig_title="SCUBAS / Time, UT since 12 UT on 10 May 2024",
         text_size=10,
         ylim=[-15, 15],
     )
-    # model.plot_profiles(
-    #     fname="figures/2024/AJC/2024.Profiles.png",
-    #     xlim=[1e-6, 1e-2],
-    #     tylim=[-90, 90],
-    #     tyticks=[-90, -45, 0, 45, 90],
-    #     aylim=[1e-3, 1e0],
-    #     t_mul=1e-3,
-    #     nrows=3,
-    #     ncols=3,
-    # )
-    # model.plot_e_fields(
-    #     fname="figures/2024/AJC/2024.Scubas.Exfield.png",
-    #     date_lim=[dt.datetime(2024, 5, 10, 12), dt.datetime(2024, 5, 12)],
-    #     fig_title=r"$E_x$-field / Time: UT since 12 UT on 10 May 2024",
-    #     text_size=15,
-    #     ylim=[-100, 100],
-    #     nrows=3,
-    #     component="X",
-    #     groups=[[0, 1, 2], [3, 4, 5], [6, 7, 8]],
-    # )
-    # model.plot_e_fields(
-    #     fname="figures/2024/AJC/2024.Scubas.Eyfield.png",
-    #     date_lim=[dt.datetime(2024, 5, 10, 12), dt.datetime(2024, 5, 12)],
-    #     fig_title=r"$E_y$-field / Time: UT since 12 UT on 10 May 2024",
-    #     text_size=15,
-    #     nrows=3,
-    #     ylim=[-100, 100],
-    #     component="Y",
-    #     groups=[[0, 1, 2], [3, 4, 5], [6, 7, 8]],
-    # )
+    # # model.plot_profiles(
+    # #     fname="figures/2024/AJC/2024.Profiles.png",
+    # #     xlim=[1e-6, 1e-2],
+    # #     tylim=[-90, 90],
+    # #     tyticks=[-90, -45, 0, 45, 90],
+    # #     aylim=[1e-3, 1e0],
+    # #     t_mul=1e-3,
+    # #     nrows=3,
+    # #     ncols=3,
+    # # )
+    # # model.plot_e_fields(
+    # #     fname="figures/2024/AJC/2024.Scubas.Exfield.png",
+    # #     date_lim=[dt.datetime(2024, 5, 10, 12), dt.datetime(2024, 5, 12)],
+    # #     fig_title=r"$E_x$-field / Time: UT since 12 UT on 10 May 2024",
+    # #     text_size=15,
+    # #     ylim=[-100, 100],
+    # #     nrows=3,
+    # #     component="X",
+    # #     groups=[[0, 1, 2], [3, 4, 5], [6, 7, 8]],
+    # # )
+    # # model.plot_e_fields(
+    # #     fname="figures/2024/AJC/2024.Scubas.Eyfield.png",
+    # #     date_lim=[dt.datetime(2024, 5, 10, 12), dt.datetime(2024, 5, 12)],
+    # #     fig_title=r"$E_y$-field / Time: UT since 12 UT on 10 May 2024",
+    # #     text_size=15,
+    # #     nrows=3,
+    # #     ylim=[-100, 100],
+    # #     component="Y",
+    # #     groups=[[0, 1, 2], [3, 4, 5], [6, 7, 8]],
+    # # )
     obs = load_extracted_voltage(
         model.cable.tot_params.index,
         -model.cable.tot_params["Vt(v)"],
-        figfname="figures/2024/AJC/Compare-Stn.png"
+        figfname="figures/2024/AJC_MAGE/Compare-Stn.png",
+        fig_title=f"Date: 10-12 May 2024; MAGE[stn]: tmb/guam",
     )
-    # model.plot_zoomedin_analysis(
-    #     fname="figures/1958/1958.Scubas.Compare.png",
-    #     inputs=obs,
-    #     date_lims=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)],
-    #     ylim=[-3000, 3000],
-    #     interval=30,
-    #     mult=1,
-    # )
-    # return model, cable
+    # # model.plot_zoomedin_analysis(
+    # #     fname="figures/1958/1958.Scubas.Compare.png",
+    # #     inputs=obs,
+    # #     date_lims=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)],
+    # #     ylim=[-3000, 3000],
+    # #     interval=30,
+    # #     mult=1,
+    # # )
+    # # return model, cable
 
 
 if __name__ == "__main__":
-    compile_2024_AJC()
+    compile_2024_AJC_MAGE()
