@@ -27,7 +27,6 @@ import datetime as dt
 
 import numpy as np
 import pandas as pd  # type: ignore
-from bathymetry import BathymetryAnalysis
 from cable import SCUBASModel
 from loguru import logger  # type: ignore
 from scubas.datasets import Site

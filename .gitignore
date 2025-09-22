@@ -10,6 +10,7 @@ __pycache__/
 # Ignore files Folders
 databulk
 figures
+urs
 data/GEBCO_2024/
 
 # Distribution / packaging
