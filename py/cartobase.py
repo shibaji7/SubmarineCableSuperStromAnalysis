@@ -188,7 +188,7 @@ class CartoBase(GeoAxes):
         aacgm_coast = MultiLineString(new_i)
         return aacgm_coast
 
-    def mark_latitudes(self, lat_arr, lon_location=110, **kwargs):
+    def mark_latitudes(self, lat_arr, lon_location=-70, **kwargs):
         """
         mark the latitudes
         Write down the latitudes on the map for labeling!
@@ -214,7 +214,7 @@ class CartoBase(GeoAxes):
                 self.text(
                     _pro[0],
                     _pro[1],
-                    r"$%s^{\circ}$" % str(lat_arr[_np]),
+                    r"$%s^{\circ}$ N" % str(lat_arr[_np]),
                     **kwargs,
                     alpha=0.5,
                 )
@@ -290,7 +290,7 @@ class CartoBase(GeoAxes):
                 if self.coords == "aacgmv2_mlt":
                     marker_text = str(int(t / 15.0))
                 else:
-                    marker_text = r"$%s^{\circ}$" % str(t)
+                    marker_text = r"$%s^{\circ}$ E" % str(t)
                 self.text(
                     locs.bounds[0] + 0.02 * locs.bounds[0],
                     locs.bounds[1] + 0.02 * locs.bounds[1],

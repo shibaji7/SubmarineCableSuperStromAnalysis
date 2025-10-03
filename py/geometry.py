@@ -190,7 +190,7 @@ class CartoBase(GeoAxes):
                 self.text(
                     _pro[0],
                     _pro[1],
-                    r"$%s^{\circ}$" % str(lat_arr[_np]),
+                    r"$%s^{\circ}$ N" % str(lat_arr[_np]),
                     **kwargs,
                     alpha=0.5,
                 )
@@ -266,7 +266,7 @@ class CartoBase(GeoAxes):
                 if self.coords == "aacgmv2_mlt":
                     marker_text = str(int(t / 15.0))
                 else:
-                    marker_text = r"$%s^{\circ}$" % str(t)
+                    marker_text = r"$%s^{\circ}$ E" % str(t)
                 self.text(
                     locs.bounds[0] + 0.02 * locs.bounds[0],
                     locs.bounds[1] + 0.02 * locs.bounds[1],
@@ -325,8 +325,6 @@ def create_new_pane(
 
     # set the extent of the plot to a global view
     plt_lons = np.arange(-180, 181, 15)
-    mark_lons = np.arange(extent[0], extent[1], 10)
-    plt_lons = np.arange(-180, 181, 20)
     mark_lons = np.arange(extent[0], extent[1], 20)
     plt_lats = np.arange(extent[1], extent[2], 10)
     ax.set_extent(extent, crs=cartopy.crs.PlateCarree())
@@ -335,8 +333,9 @@ def create_new_pane(
     gl.xformatter = LONGITUDE_FORMATTER
     gl.yformatter = LATITUDE_FORMATTER
     gl.n_steps = 90
-    ax.mark_latitudes(plt_lats, fontsize="small", color="k")
-    ax.mark_longitudes(mark_lons, fontsize="small", color="k")
+    print(plt_lats, mark_lons)
+    ax.mark_latitudes(plt_lats, fontsize="x-small", color="k")
+    ax.mark_longitudes(mark_lons, fontsize="x-small", color="k")
     data = da["elevation"][::darray, ::darray]
     data = np.ma.masked_where(data >= 0, data)
     im = ax.pcolormesh(
@@ -380,7 +379,11 @@ def create_new_pane(
 def create_bathymetrymap_NA(
     cables=["TAT1"], colors=["m", "gold"], date=dt.datetime(1989, 3, 12)
 ):
-    fig, ax = create_new_pane(date, extent=[-80, -5, 30, 60], darray=20)
+    fig, ax = create_new_pane(
+        date, 
+        central_longitude=-70,
+        central_latitude=20,
+        extent=[-80, -5, 30, 60], darray=20)
     for cbl, color in zip(cables, colors):
         cable = getattr(SubSeaCables, cbl)
         ax.scatter(
