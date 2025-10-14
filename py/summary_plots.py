@@ -207,7 +207,7 @@ _, ax = sp.plot_stack_plots(
     text="(b) March 1989",
     ylabel=r"$B_H$ (nT)",
     color="blue",
-    xlim=[dt.datetime(1989, 3, 12), dt.datetime(1989, 3, 15)],
+    xlim=[dt.datetime(1989, 3, 12, 12), dt.datetime(1989, 3, 15)],
     ylim=[-2000, 2000],
     interval=12,
     dfx=r"%H",
@@ -218,7 +218,7 @@ sp.plot_stack_plots(
     datasets_1989["STJ"]["Date"].tolist(),
     datasets_1989["STJ"]["H"],
     color="red",
-    xlim=[dt.datetime(1989, 3, 12), dt.datetime(1989, 3, 15)],
+    xlim=[dt.datetime(1989, 3, 12, 12), dt.datetime(1989, 3, 15)],
     ylim=[-2000, 2000],
     interval=12,
     ax=ax,
@@ -229,7 +229,7 @@ sp.plot_stack_plots(
     datasets_1989["HAD"]["Date"].tolist(),
     datasets_1989["HAD"]["H"],
     color="k",
-    xlim=[dt.datetime(1989, 3, 12), dt.datetime(1989, 3, 15)],
+    xlim=[dt.datetime(1989, 3, 12, 12), dt.datetime(1989, 3, 15)],
     ylim=[-2000, 2000],
     interval=12,
     ax=ax,
@@ -378,7 +378,7 @@ ax0.set_xticklabels([])
 ax1.set_xlim([dt.datetime(1958, 2, 11), dt.datetime(1958, 2, 11, 5)])
 ax1.set_yticklabels([])
 ax0.text(
-    0.1, 0.95, "(a-1) March 1958", ha="left", va="top", transform=ax0.transAxes
+    0.1, 0.95, "(a-1) February 1958", ha="left", va="top", transform=ax0.transAxes
 )
 ax1.text(
     0.1, 0.95, "(a-2)", ha="left", va="top", transform=ax1.transAxes
