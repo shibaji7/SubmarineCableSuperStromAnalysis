@@ -320,12 +320,14 @@ class SCUBASModel(object):
 
         # Omni interpolation
         dOmniTime = omni.time.apply(lambda j: (j - o.index[0]).total_seconds())
+        print(omni.head())
         symhNew = np.interp(inputs.newdT, dOmniTime, omni.SymH)
+        print(symhNew.min(), symhNew.max())
 
         sp = StackPlots(nrows=2, ncols=2, figsize=(4, 2.5), sharex=False, text_size=12)
         ax = sp.axes[0]
         ax.hist(e, 50, color="b", histtype="step")
-        ax.set_xlabel("Error, V", fontsize=12)
+        ax.set_xlabel("Residuals, V", fontsize=12)
         ax.set_ylabel("Counts", fontsize=12)
         ax.tick_params(axis="x", labelsize=12)
         ax.set_xlim(lims)
@@ -382,11 +384,11 @@ class SCUBASModel(object):
         ax.set_xlabel("Observed, V", fontsize=12)
         ax.set_xlim(lims)
         ax.set_ylim(lims)
-        ax.set_ylabel("Error, V", fontsize=12)
+        ax.set_ylabel("Residuals, V", fontsize=12)
         ax.text(
             0.05,
             0.9,
-            "(c) Residue",
+            "(c)",
             ha="left",
             va="center",
             transform=ax.transAxes,
@@ -395,6 +397,7 @@ class SCUBASModel(object):
         ax.axhline(0, color="k", lw=0.8, ls="--")
 
         ax = sp.axes[3]
+        # print(symhNew, e)
         ax.scatter(
             symhNew,
             e,
@@ -406,7 +409,7 @@ class SCUBASModel(object):
         ax.set_xlim(-100, 0)
         ax.set_ylim(lims)
         ax.axhline(0, color="k", lw=0.8, ls="--")
-        ax.set_ylabel("Error, V", fontsize=12)
+        ax.set_ylabel("Residuals, V", fontsize=12)
         ax.text(
             0.05,
             0.9,
