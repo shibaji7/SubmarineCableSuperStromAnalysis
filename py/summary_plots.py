@@ -413,4 +413,50 @@ sp.save_fig("figures/E-fields.png")
 sp.close()
 # Compare the datastets
 
-# Create Error Analysis
+# Create Transpaernt Analysis
+
+datasets_1958 = {
+    "ESK": pd.read_csv("data/1958/ESK_scaled.csv", parse_dates=["Date"]),
+    "FRD": pd.read_csv("data/1958/FRD_scaled.csv", parse_dates=["Date"]),
+}
+(
+    datasets_1958["ESK"]["H"],
+    datasets_1958["FRD"]["H"]
+) = (
+    np.sqrt(
+        datasets_1958["ESK"]["X"]**2 + datasets_1958["ESK"]["Y"]**2
+    ),
+    np.sqrt(
+        datasets_1958["FRD"]["X"]**2 + datasets_1958["FRD"]["Y"]**2
+    )
+)
+(
+    datasets_1958["ESK"]["H"],
+    datasets_1958["FRD"]["H"],
+) = (
+    datasets_1958["ESK"]["H"] - np.median(datasets_1958["ESK"]["H"][:60]),
+    datasets_1958["FRD"]["H"] - np.median(datasets_1958["FRD"]["H"][:60])
+)
+sp = StackPlots(
+    nrows=1,
+    ncols=1,
+    figsize=(8, 3),
+    datetime=True,
+    text_size=12,
+    sharex=False,
+)
+_, ax = sp.plot_stack_plots(
+    datasets_1958["ESK"]["Date"].tolist(),
+    datasets_1958["ESK"]["H"],
+    text="(a) February 1958",
+    ylabel=r"$B_H$ (nT)",
+    color="blue",
+    xlim=[dt.datetime(1958, 2, 11), dt.datetime(1958, 2, 11, 5)],
+    ylim=[-1000, 1000],
+    interval=1,
+    dfx=r"%H",
+    label="ESK",
+    xlabel="UT Hours (since 11 February 1958, 0 UT)",
+)
+sp.fig.savefig("figures/transparent_plots.png", bbox_inches="tight", transparent=True)
+sp.close()
