@@ -188,18 +188,18 @@ _, ax = sp.plot_stack_plots(
     label="ESK",
     xlabel="UT Hours (since 11 February 1958, 0 UT)",
 )
-sp.plot_stack_plots(
-    datasets_1958["FRD"]["Date"].tolist(),
-    datasets_1958["FRD"]["H"],
-    color="red",
-    xlim=[dt.datetime(1958, 2, 11), dt.datetime(1958, 2, 11, 5)],
-    interval=1,
-    ax=ax,
-    label="FRD",
-    ylim=[-1000, 1000],
-    dfx=r"%H",
-)
-ax.legend(loc=2)
+# sp.plot_stack_plots(
+#     datasets_1958["FRD"]["Date"].tolist(),
+#     datasets_1958["FRD"]["H"],
+#     color="red",
+#     xlim=[dt.datetime(1958, 2, 11), dt.datetime(1958, 2, 11, 5)],
+#     interval=1,
+#     ax=ax,
+#     label="FRD",
+#     ylim=[-1000, 1000],
+#     dfx=r"%H",
+# )
+# ax.legend(loc=2)
 
 _, ax = sp.plot_stack_plots(
     datasets_1989["FRD"]["Date"].tolist(),

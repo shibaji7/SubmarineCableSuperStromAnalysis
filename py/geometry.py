@@ -308,9 +308,13 @@ def create_new_pane(
     ## then you define additional attributes to the figure, like adding data, labels, colors, whatever
 
     ## initialize a matplotlib figure
-    fig = plt.figure(figsize=(4, 4), dpi=300)
+    fig = plt.figure(figsize=(4, 8), dpi=300)
 
-    proj = cartopy.crs.Stereographic(
+    # proj = cartopy.crs.Stereographic(
+    #     central_longitude=central_longitude,
+    #     central_latitude=central_latitude,
+    # )
+    proj = cartopy.crs.Orthographic(
         central_longitude=central_longitude,
         central_latitude=central_latitude,
     )
@@ -333,7 +337,6 @@ def create_new_pane(
     gl.xformatter = LONGITUDE_FORMATTER
     gl.yformatter = LATITUDE_FORMATTER
     gl.n_steps = 90
-    print(plt_lats, mark_lons)
     ax.mark_latitudes(plt_lats, fontsize="x-small", color="k")
     ax.mark_longitudes(mark_lons, fontsize="x-small", color="k")
     data = da["elevation"][::darray, ::darray]
@@ -349,7 +352,7 @@ def create_new_pane(
         vmin=-5,
     )
     cax = fig.add_axes(cx)
-    cb = fig.colorbar(im, cax=cax)
+    cb = fig.colorbar(im, cax=cax,)
     cb.set_label("Bathymetry, km")
     ax.set_extent(extent, crs=cartopy.crs.PlateCarree())
     ax.overaly_coast_lakes(lw=0.4, alpha=0.4)
@@ -381,9 +384,11 @@ def create_bathymetrymap_NA(
 ):
     fig, ax = create_new_pane(
         date, 
-        central_longitude=-70,
-        central_latitude=20,
-        extent=[-80, -5, 30, 60], darray=20)
+        central_longitude=-40,
+        central_latitude=30,
+        extent=[-80, 10, 30, 70], darray=20,
+        cx=[0.92, 0.4, 0.03, 0.2], 
+    )
     for cbl, color in zip(cables, colors):
         cable = getattr(SubSeaCables, cbl)
         ax.scatter(
@@ -433,7 +438,7 @@ def create_bathymetrymap_NA(
         rotation=90,
     )
     ax.text(
-        -3.1757,
+        -3.1757+2,
         50.995 - 2,
         "HAD",
         ha="center",
@@ -444,8 +449,8 @@ def create_bathymetrymap_NA(
         rotation=60,
     )
     ax.text(
-        355.516,
-        55.2678 - 2,
+        355.516 + 1,
+        55.2678 + 2,
         "ESK",
         ha="center",
         va="bottom",
