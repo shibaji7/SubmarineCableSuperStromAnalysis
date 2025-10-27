@@ -199,7 +199,7 @@ _, ax = sp.plot_stack_plots(
 #     ylim=[-1000, 1000],
 #     dfx=r"%H",
 # )
-# ax.legend(loc=2)
+ax.legend(loc=2)
 
 _, ax = sp.plot_stack_plots(
     datasets_1989["FRD"]["Date"].tolist(),
