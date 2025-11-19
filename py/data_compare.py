@@ -125,7 +125,7 @@ all_data["newdT"] = all_data.Time.apply(lambda j: (j - all.Time.iloc[0]).total_s
 all_data["y"] = np.interp(all_data.newdT, dT, -np.array(all["Vt(v)"]))
 mdpe = 0.3*np.median((all_data["Voltage"] - all_data["y"])/all_data["Voltage"])
 print(mdpe)
-ax0.text(0.1, 0.3, "MdPE: {:.2f}%".format(np.abs(mdpe) * 100), ha="left", va="top", transform=ax1.transAxes, fontsize=10)
+ax0.text(0.01, 0.3, "MdPE: {:.2f}%".format(np.abs(mdpe) * 100), ha="left", va="top", transform=ax1.transAxes, fontsize=10)
 
 
 

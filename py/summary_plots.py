@@ -99,8 +99,8 @@ _, ax = sp.plot_stack_plots(
 ax.axhline(0, color="black", linestyle="--", linewidth=0.5)
 ax.hlines(Dst1989["DST"].min(), dt.datetime(1989, 3, 13, 18), dt.datetime(1989, 3, 14, 6), color="red", linestyle=":", linewidth=1)
 ax.text(0.95, 0.1, f"(b) Dst$_m$={Dst1989['DST'].min()} nT", ha="right", va="bottom", transform=ax.transAxes)
-ax.vlines(dt.datetime(1989, 3, 13, 1), -200, 100, color="m", linestyle=":", linewidth=1.5)
-ax.text(dt.datetime(1989, 3, 13, 2), 60, "1 UT (3/13)", ha="left", va="top", color="m")
+ax.vlines(dt.datetime(1989, 3, 13, 1, 27), -200, 100, color="m", linestyle=":", linewidth=1.5)
+ax.text(dt.datetime(1989, 3, 13, 2), 60, "1:27 UT (3/13)", ha="left", va="top", color="m")
 ax.tick_params(axis="y", labelcolor="b")
 ax.set_ylabel("Dst (nT)", color="b")
 # tax = ax.twinx()
@@ -110,6 +110,7 @@ ax.set_ylabel("Dst (nT)", color="b")
 # tax.set_ylim(0, 3000)
 
 sp.save_fig("figures/Dst_StackPlots.png")
+sp.save_fig("Validation/Figure05.png")
 sp.close()
 
 
