@@ -294,7 +294,7 @@ def compile_2024_AJC():
         segment_coordinates,
         profiles,
         names=names,
-        left_active_termination=PROFILES.LD,
+        # left_active_termination=PROFILES.LD,
         right_active_termination=PROFILES.LD,
     )
     model = SCUBASModel(
