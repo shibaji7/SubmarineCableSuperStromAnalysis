@@ -182,7 +182,9 @@ class BathymetryAnalysis:
         ylim=[-5, 0.5],
         yticks=[-5, -4, -3, -2, -1, -0.5],
         yticklabels=[5, 4, 3, 2, 1, 0.5],
-        ax = None
+        ax = None,
+        method=[np.mean]*10,
+        save = True,
     ):
         """
         Plot the bathymetry data with segments and save the figure.
@@ -195,10 +197,8 @@ class BathymetryAnalysis:
         if self.bathymetry_data is None:
             raise ValueError("Bathymetry data not loaded. Call load_data() first.")
 
-        save = True
         if ax is None:
             fig, ax = plt.subplots(dpi=dpi, figsize=figsize, nrows=1, ncols=1)
-            save = False
 
         # Plot the full bathymetry data
         ax.plot(
@@ -213,7 +213,7 @@ class BathymetryAnalysis:
         for i, seg in enumerate(self.segments):
             segment_data = self.bathymetry_data.iloc[seg[0] : seg[1]]
             dist.append(segment_data.distance.tolist()[0] / 1e3)
-            depth.append(segment_data["bathymetry.meters"].mean() / 1e3)
+            depth.append(segment_data["bathymetry.meters"].agg(method[i]) / 1e3)
             ax.plot(
                 segment_data.distance / 1e3,
                 -1 * segment_data["bathymetry.meters"] / 1e3,
@@ -273,9 +273,11 @@ class BathymetryAnalysis:
         ax.set_yticklabels(yticklabels)
         ax.set_ylabel("Depths, km")
 
-
+        print(f"Bathymetry plot saved to {output_path} / {save}")
+        save = True
         if save:
             # Save the figure
+            print(">>>>>>>>>>>>>>>>>>>>>>", output_path)
             fig.savefig(output_path, bbox_inches="tight", dpi=dpi)
             plt.close(fig)
         return
