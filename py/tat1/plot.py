@@ -60,7 +60,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
         )
         sp.plot_stack_plots(
             data.index,
-            data.Z - np.median(data.Z.iloc[:60]),
+            data.Z.shift(periods=10) - np.median(data.Z.iloc[:60]),
             ylim=[-1500, 1500],
             label=r"$B_z$",
             xlabel="Time, UT since 0 UT on 11 Feb 1958",

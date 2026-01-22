@@ -101,8 +101,8 @@ def get_bathymetry(names, file_path: str = "data/1958/lat_long_bathymetry.csv") 
         (170, 210),
         (210, 335),
         (335, 390),
-        (390, 440),
-        (440, -1),
+        (390, 442),
+        (442, -1),
     ]
     colors = [
         "tab:blue",
@@ -130,7 +130,12 @@ def get_bathymetry(names, file_path: str = "data/1958/lat_long_bathymetry.csv") 
     # Initialize and use the BathymetryAnalysis class
     bathymetry = BathymetryAnalysis(file_path, segments, colors)
     bathymetry.load_data()
-    bathymetry.plot_bathymetry("figures/tat1/bathymetry_TAT-1.png", names=names)
+    bathymetry.plot_bathymetry(
+        "figures/tat1/bathymetry_TAT-1.png", 
+        names=names,
+        xlim=[0, 3900],
+        method=[np.mean]*9
+    )
     segment_coordinates = bathymetry.get_segment_coordinates()
     print("Segment Coordinates:", segment_coordinates)
     return bathymetry, segment_coordinates, segments
