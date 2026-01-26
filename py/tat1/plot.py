@@ -80,5 +80,10 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
         sp.close()
     return
 
+def plot_e_fields():
+    model_out = pd.read_csv("data/1958/simulation.csv", parse_dates=["Time"])
+    print(model_out.head())
+    return
+
 if __name__ == "__main__":
-    read_dataset()
+    plot_e_fields()

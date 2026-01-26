@@ -185,6 +185,7 @@ class BathymetryAnalysis:
         ax = None,
         method=[np.mean]*10,
         save = True,
+        step_color="k",
     ):
         """
         Plot the bathymetry data with segments and save the figure.
@@ -230,7 +231,7 @@ class BathymetryAnalysis:
                     ha="center",
                     va="top",
                     rotation=90,
-                    fontdict=dict(size=10, color="b"),
+                    fontdict=dict(size=10, color="r"),
                 )
 
             # Print initial and final coordinates of the segment
@@ -255,7 +256,7 @@ class BathymetryAnalysis:
             where="post",
             ls="-",
             lw=1.5,
-            color="k",
+            color=step_color,
         )
 
         # Append the final coordinate of the last segment

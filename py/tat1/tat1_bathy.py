@@ -47,7 +47,8 @@ def create_bathymetrystacks():
         "figures/bathymetry_TAT1.png", 
         names=names, 
         xlim=[0, 3900],
-        method=[np.mean]*9# + [np.min, np.mean, np.min, np.mean, np.median],
+        method=[np.mean]*9,# + [np.min, np.mean, np.min, np.mean, np.median],
+        step_color="b",
     )
     segment_coordinates = np.array(bathymetry.get_segment_coordinates())
     print(f"dx Segments>>, {segment_coordinates}")

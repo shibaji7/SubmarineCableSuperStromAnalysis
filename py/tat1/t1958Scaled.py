@@ -134,7 +134,8 @@ def get_bathymetry(names, file_path: str = "data/1958/lat_long_bathymetry.csv") 
         "figures/tat1/bathymetry_TAT-1.png", 
         names=names,
         xlim=[0, 3900],
-        method=[np.mean]*9
+        method=[np.mean]*9,
+        step_color="b",
     )
     segment_coordinates = bathymetry.get_segment_coordinates()
     print("Segment Coordinates:", segment_coordinates)
@@ -234,9 +235,9 @@ def compile_1958(gplot=False):
         nrows=3,
         ncols=3,
         text_size=15,
-        tag0_loc=[0, 4],
-        tag1_loc=[4, 5, 6, 7],
-        tag2_loc=[3, 7],
+        tag0_loc=[0, 3, 6],
+        tag1_loc=[6, 7, 8],
+        tag2_loc=[2, 5, 8],
         figsize=(4, 4),
     )
     model.plot_e_fields(
