@@ -296,7 +296,7 @@ def compile_1958(gplot=False):
         omni=Dst1958,
         lims=[-3000, 3000],
     )
-    return
+    return model
 
 
 def run_detailed_error_analysis(

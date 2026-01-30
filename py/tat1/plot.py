@@ -11,6 +11,9 @@ from cable import SCUBASModel
 from loguru import logger  # type: ignore
 from utils import StackPlots, create_from_lat_lon, read_iaga
 
+from mpl_toolkits.axisartist.grid_finder import DictFormatter, FixedLocator
+import matplotlib.dates as mdates
+
 os.makedirs("figures/1958/", exist_ok=True)
 
 
@@ -81,8 +84,29 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
     return
 
 def plot_e_fields():
-    model_out = pd.read_csv("data/1958/simulation.csv", parse_dates=["Time"])
-    print(model_out.head())
+    model_out = pd.read_csv("data/1958/TAT1SimVolt.csv", parse_dates=["Time"])
+    xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 5)]
+    sp = StackPlots(nrows=1, ncols=1, datetime=True, figsize=(6, 4), text_size=12)
+    ax, tax = sp.axes[0], sp.axes[0].twinx()
+
+    ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+    for j in range(9):
+        factor = 1
+        if j > 0 and j < 8:
+            factor = 0.7
+        ax.plot(model_out.Time, 2000*j + factor*model_out[f"E.X.0{j}"], color="b", ls="-", lw=0.6)
+        ax.plot(model_out.Time, 2000*j + factor*model_out[f"E.Y.0{j}"] - 500, color="m", ls="-", lw=0.6)
+    ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=0.515, ymax=0.61, color="g", ls="-", lw=1.5)
+    ax.text(dt.datetime(1958, 2, 11, 0, 32), 2000*4 + 500, "2 V/km", color="g", fontsize=10)
+    ax.set_yticklabels([])
+    tax.set_yticklabels([])
+    ax.set_xlabel("Time, UT (11 Feb 1958)")
+    ax.set_ylabel("$E_x$, mv/km", color="b")
+    tax.set_ylabel("$E_y$, mv/km", color="m")
+    ax.set_xlim(xlim)
+    sp.save_fig(f"figures/1958/1958.Efield.png")
+    sp.close()
     return
 
 if __name__ == "__main__":
