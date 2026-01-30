@@ -86,7 +86,15 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
 def plot_e_fields():
     model_out = pd.read_csv("data/1958/TAT1SimVolt.csv", parse_dates=["Time"])
     xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 5)]
-    sp = StackPlots(nrows=1, ncols=1, datetime=True, figsize=(6, 4), text_size=12)
+    sp = StackPlots(
+        nrows=2, ncols=1, datetime=True, 
+        figsize=(6, 4), text_size=12, 
+        gridspec_kw={
+            "height_ratios": [4, 1],
+            "wspace": 0.05,
+            "hspace": 0.05,
+        }   
+    )
     ax, tax = sp.axes[0], sp.axes[0].twinx()
 
     ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
@@ -94,18 +102,29 @@ def plot_e_fields():
     for j in range(9):
         factor = 1
         if j > 0 and j < 8:
-            factor = 0.7
+            factor = 0.5
         ax.plot(model_out.Time, 2000*j + factor*model_out[f"E.X.0{j}"], color="b", ls="-", lw=0.6)
         ax.plot(model_out.Time, 2000*j + factor*model_out[f"E.Y.0{j}"] - 500, color="m", ls="-", lw=0.6)
     ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=0.515, ymax=0.61, color="g", ls="-", lw=1.5)
     ax.text(dt.datetime(1958, 2, 11, 0, 32), 2000*4 + 500, "2 V/km", color="g", fontsize=10)
+    ax.text(0.05, 0.95, "(A)", color="k", transform=ax.transAxes, fontsize=12)
     ax.set_yticklabels([])
     tax.set_yticklabels([])
-    ax.set_xlabel("Time, UT (11 Feb 1958)")
+    ax.set_xlabel("")
     ax.set_ylabel("$E_x$, mv/km", color="b")
     tax.set_ylabel("$E_y$, mv/km", color="m")
     ax.set_xlim(xlim)
-    sp.save_fig(f"figures/1958/1958.Efield.png")
+
+    ax = sp.axes[1]
+    ax.text(0.05, 0.95, "(B)", color="k", transform=ax.transAxes, fontsize=12)
+    ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+    ax.plot(model_out.Time, model_out["U0"], color="k", ls="-", lw=0.6, label="$U_E$")
+    ax.plot(model_out.Time, model_out["U1"], color="r", ls="-", lw=0.6, label="$U_W$")
+    ax.legend(loc=2, fontsize=10)
+    ax.set_ylabel("Voltage, V")
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+    ax.set_xlabel("Time, UT (11 Feb 1958)")
+    sp.save_fig(f"figures/tat1/1958.Efield.png")
     sp.close()
     return
 

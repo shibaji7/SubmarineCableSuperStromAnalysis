@@ -28,6 +28,7 @@ class StackPlots:
         figsize: tuple = (8, 3),
         text_size=15,
         sharex=True,
+        gridspec_kw: Optional[dict] = None,
     ):
         mpl.rc("font", size=text_size)
         self.nrows = nrows
@@ -39,6 +40,7 @@ class StackPlots:
             sharex=sharex,
             dpi=dpi,
             subplot_kw={"projection": "polar"} if polar else {},
+            gridspec_kw=gridspec_kw,
         )
         self.axes = self.axes.flatten() if self.nrows > 1 else [self.axes]
         self.fig.subplots_adjust(hspace=0.5, wspace=0.3)
