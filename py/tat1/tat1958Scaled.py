@@ -72,7 +72,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
         ax.legend(loc=2, fontsize=12)
         data = data[(data.index >= xlim[0]) & (data.index < xlim[1])]
         data.index = data.index - dt.timedelta(minutes=2)
-        k = 1.
+        k = 12.
         data.Z, data.X, data.Y = data.Z*k, data.X*k, data.Y*k
         data.to_csv(f"data/1958/{stn}_scaled.csv", header=True, index=True, float_format="%g")
         sp.save_fig("figures/tat1/1958.data.png")
@@ -166,7 +166,8 @@ def get_conductivity_profile(dSegments, segments, bth):
     for p, seg in zip(profiles, segments):
         o = bth.iloc[seg[0] : seg[1]]
         depth = np.median(o["bathymetry.meters"])
-        p.layers[0].thickness = depth / 1e3  # in k meters
+        p.layers[0].thickness = depth  # in k meters
+        print(f"Segment {seg} - Top layer thickness set to {depth/1e3} km")
     return profiles
 
 def load_extracted_voltage(fname="data/1958/Voltage/TAT1Volt-rescale.csv"):

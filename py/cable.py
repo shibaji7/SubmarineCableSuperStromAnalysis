@@ -57,7 +57,7 @@ class SCUBASModel(object):
         for i, seg in enumerate(self.cable_structure.cable_seg):
             site = seg["site"]
             site.layers[0].thickness *= tmul
-            print(self.segment_files[i])
+            print("<<>>>>>>",self.segment_files[i], site.layers, tmul)
             self.tlines.append(
                 TransmissionLine(
                     sec_id=seg["sec_id"],
@@ -130,7 +130,7 @@ class SCUBASModel(object):
         t_mul=1.0,
     ):
         if t_mul == 1.0:
-            self.initialize_TL(1e3)
+            #self.initialize_TL(1e3)
             t_mul = 1e-3
         sp = StackPlots(
             nrows=nrows,

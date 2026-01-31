@@ -101,15 +101,24 @@ def plot_e_fields():
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
     for j in range(9):
         factor = 1
-        if j > 0 and j < 8:
-            factor = 0.5
-        ax.plot(model_out.Time, 2000*j + factor*model_out[f"E.X.0{j}"], color="b", ls="-", lw=0.6)
-        ax.plot(model_out.Time, 2000*j + factor*model_out[f"E.Y.0{j}"] - 500, color="m", ls="-", lw=0.6)
-    ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=0.515, ymax=0.61, color="g", ls="-", lw=1.5)
-    ax.text(dt.datetime(1958, 2, 11, 0, 32), 2000*4 + 500, "2 V/km", color="g", fontsize=10)
+        ax.plot(model_out.Time, 4000*j + factor*model_out[f"E.X.0{j}"], color="b", ls="-", lw=0.6)
+        ax.plot(model_out.Time, 4000*j + factor*model_out[f"E.Y.0{j}"] - 2000, color="m", ls="-", lw=0.6)
+    ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=0.478, ymax=0.547, color="g", ls="-", lw=1.5)
+    ax.text(dt.datetime(1958, 2, 11, 0, 32), 4000*4 + 500, "2 V/km", color="g", fontsize=10)
     ax.text(0.05, 0.95, "(A)", color="k", transform=ax.transAxes, fontsize=12)
     ax.set_yticklabels([])
     tax.set_yticklabels([])
+    for j, name in enumerate(["CS-W", "DO-1", "DO-2", "DO-3", "RDG-1", "DO-4", "MAR", "DO-5", "CS-E"]):
+        ax.text(
+            xlim[1] + dt.timedelta(minutes=5),
+            4000*j - 1000,
+            name,
+            color="k",
+            fontsize=6,
+            rotation=90,
+            va="center",
+            ha="center",
+        )
     ax.set_xlabel("")
     ax.set_ylabel("$E_x$, mv/km", color="b")
     tax.set_ylabel("$E_y$, mv/km", color="m")
@@ -118,8 +127,8 @@ def plot_e_fields():
     ax = sp.axes[1]
     ax.text(0.05, 0.95, "(B)", color="k", transform=ax.transAxes, fontsize=12)
     ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
-    ax.plot(model_out.Time, model_out["U0"], color="k", ls="-", lw=0.6, label="$U_E$")
-    ax.plot(model_out.Time, model_out["U1"], color="r", ls="-", lw=0.6, label="$U_W$")
+    ax.plot(model_out.Time, model_out["U0"]/4, color="k", ls="-", lw=0.6, label="$U_E$")
+    ax.plot(model_out.Time, model_out["U1"]/4, color="r", ls="-", lw=0.6, label="$U_W$")
     ax.legend(loc=2, fontsize=10)
     ax.set_ylabel("Voltage, V")
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
