@@ -353,7 +353,7 @@ def create_new_pane(
     )
     cax = fig.add_axes(cx)
     cb = fig.colorbar(im, cax=cax,)
-    cb.set_label("Bathymetry, km")
+    cb.set_label("Bathymetry, km", fontsize=8)
     ax.set_extent(extent, crs=cartopy.crs.PlateCarree())
     ax.overaly_coast_lakes(lw=0.4, alpha=0.4)
     ax.add_feature(cartopy.feature.LAND, facecolor="lightgray", lw=0.4)
@@ -364,7 +364,7 @@ def create_new_pane(
         ha="left",
         va="top",
         transform=ax.transAxes,
-        fontsize=12,
+        fontsize=8,
         rotation=90,
     )
     ax.text(
@@ -384,8 +384,8 @@ def create_bathymetrymap_NA(
 ):
     fig, ax = create_new_pane(
         date, 
-        central_longitude=-40,
-        central_latitude=30,
+        central_longitude=-30,
+        central_latitude=50,
         extent=[-80, 10, 30, 70], darray=20,
         cx=[0.92, 0.4, 0.03, 0.2], 
     )
@@ -418,9 +418,17 @@ def create_bathymetrymap_NA(
                 fontsize=8,
                 fontdict={"weight": "bold", "color": color},
             )
+    # ax.scatter(
+    #     [-77.4588, -52.7453, 355.516, -3.1757],
+    #     [38.3004, 47.5556, 50.995, 55.2678],
+    #     marker="D",
+    #     s=5,
+    #     c="k",
+    #     transform=ccrs.PlateCarree(),
+    # )
     ax.scatter(
-        [-77.4588, -52.7453, 355.516, -3.1757],
-        [38.3004, 47.5556, 50.995, 55.2678],
+        [-77.4588, -3.1757],
+        [38.3004, 55.2678],
         marker="D",
         s=5,
         c="k",
@@ -437,17 +445,17 @@ def create_bathymetrymap_NA(
         fontdict={"color": "k"},
         rotation=90,
     )
-    ax.text(
-        -3.1757+2,
-        50.995 - 2,
-        "HAD",
-        ha="center",
-        va="bottom",
-        transform=ccrs.PlateCarree(),
-        fontsize=8,
-        fontdict={"color": "k"},
-        rotation=60,
-    )
+    # ax.text(
+    #     -3.1757+2,
+    #     50.995 - 2,
+    #     "HAD",
+    #     ha="center",
+    #     va="bottom",
+    #     transform=ccrs.PlateCarree(),
+    #     fontsize=8,
+    #     fontdict={"color": "k"},
+    #     rotation=60,
+    # )
     ax.text(
         355.516 + 1,
         55.2678 + 2,
@@ -458,16 +466,16 @@ def create_bathymetrymap_NA(
         fontsize=8,
         fontdict={"color": "k"},
     )
-    ax.text(
-        -52.7453,
-        47.5556 - 3,
-        "STJ",
-        ha="center",
-        va="bottom",
-        transform=ccrs.PlateCarree(),
-        fontsize=8,
-        fontdict={"color": "k"},
-    )
+    # ax.text(
+    #     -52.7453,
+    #     47.5556 - 3,
+    #     "STJ",
+    #     ha="center",
+    #     va="bottom",
+    #     transform=ccrs.PlateCarree(),
+    #     fontsize=8,
+    #     fontdict={"color": "k"},
+    # )
     plt.savefig(
         os.path.join("figures", "GEBCO_2024_Bathymetry_TAT1,8.png"),
         dpi=1000,
@@ -688,5 +696,6 @@ def create_bathymetrymap_AJC(
 
 
 if __name__ == "__main__":
-    create_bathymetrymap_NA(["TAT1", "TAT8"])
+    # create_bathymetrymap_NA(["TAT1", "TAT8"])
+    create_bathymetrymap_NA(["TAT1"])
     # create_bathymetrymap_AJC()

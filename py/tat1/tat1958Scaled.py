@@ -10,10 +10,12 @@ from cable import SCUBASModel
 from loguru import logger  # type: ignore
 from utils import StackPlots, create_from_lat_lon, read_iaga
 
+from scubas.datasets import PROFILES
+
 os.makedirs("figures/tat1/", exist_ok=True)
 
 
-def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
+def read_dataset(base_path: str = "data/1958/scaled_data/", scale=1) -> pd.DataFrame:
     """
     Reads and processes geomagnetic data for the February 1958 superstorm.
 
@@ -72,8 +74,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
         ax.legend(loc=2, fontsize=12)
         data = data[(data.index >= xlim[0]) & (data.index < xlim[1])]
         data.index = data.index - dt.timedelta(minutes=2)
-        k = 12.
-        data.Z, data.X, data.Y = data.Z*k, data.X*k, data.Y*k
+        data.Z, data.X, data.Y = data.Z*scale, data.X*scale, data.Y*scale
         data.to_csv(f"data/1958/{stn}_scaled.csv", header=True, index=True, float_format="%g")
         sp.save_fig("figures/tat1/1958.data.png")
         sp.close()
@@ -175,7 +176,7 @@ def load_extracted_voltage(fname="data/1958/Voltage/TAT1Volt-rescale.csv"):
     data = pd.read_csv(fname, parse_dates=["Time"])
     return data
 
-def compile_1958(gplot=False):
+def compile_1958(gplot=False, scale=1.0):
     """
     Main function to run the SCUBAS model for the 1958 superstorm.
 
@@ -188,9 +189,9 @@ def compile_1958(gplot=False):
     --------
     None
     """
-    read_dataset()
+    read_dataset(scale=scale)
     names = ["CS-W", "DO-1", "DO-2", "DO-3", "RDG-1", "DO-4", "MAR", "DO-5", "CS-E"]
-    _ = read_dataset()
+    _ = read_dataset(scale=scale)
     bathymetry, segment_coordinates, segments = get_bathymetry(names)
     # segment_names = ["FRD", "FRD", "FRD", "FRD", "HAD", "HAD", "HAD", "HAD"]
     segment_names = ["ESK", "ESK", "ESK", "ESK", "ESK", "ESK", "ESK", "ESK", "ESK"]
@@ -205,6 +206,8 @@ def compile_1958(gplot=False):
         segment_coordinates,
         profiles,
         names=names,
+        left_active_termination=PROFILES.LD,
+        right_active_termination=PROFILES.LD,
     )
 
     model = SCUBASModel(
@@ -469,4 +472,4 @@ def run_detailed_error_analysis(
     return
 
 if __name__ == "__main__":
-    compile_1958(True)
+    compile_1958(True, scale=3.1) 
