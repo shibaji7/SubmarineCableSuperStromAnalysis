@@ -106,7 +106,7 @@ def plot_e_fields():
         ax.plot(model_out.Time, 2000*ix + model_out[f"E.X.0{j}"], color="b", ls="-", lw=0.6)
         ax.plot(model_out.Time, 2000*ix + model_out[f"E.Y.0{j}"] - 500, color="m", ls="-", lw=0.6)
         ix+=1
-    ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=0.425, ymax=0.515, color="g", ls="-", lw=1.5)
+    ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=0.43, ymax=0.52, color="g", ls="-", lw=1.5)
     ax.text(dt.datetime(1958, 2, 11, 0, 32), 2000*3 + 500, "2 V/km", color="g", fontsize=10)
     ax.text(0.05, 0.95, "(A)", color="k", transform=ax.transAxes, fontsize=12)
     ax.set_yticklabels([])
@@ -173,7 +173,7 @@ def plot_e_fields():
             ha="center",
         )
         ix -= 1
-    ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=0.49, ymax=0.57, color="g", ls="-", lw=1.5)
+    ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=0.495, ymax=0.575, color="g", ls="-", lw=1.5)
     ax.text(dt.datetime(1958, 2, 11, 0, 32), 400*3 + 500, "0.2 kV", color="g", fontsize=10)
     sp.save_fig(f"figures/tat1/1958.Vs.png")
     sp.close()

@@ -56,7 +56,7 @@ def create_bathymetrystacks():
         "figures/bathymetry_TAT1.png", 
         names=names, 
         xlim=[0, 3900],
-        methods=[percentile(0.24)]+[np.mean]*7+[percentile(0.4)]
+        method=[percentile(0.25)]+[np.mean]*7+[percentile(0.4)],
         step_color="b",
     )
     segment_coordinates = np.array(bathymetry.get_segment_coordinates())
