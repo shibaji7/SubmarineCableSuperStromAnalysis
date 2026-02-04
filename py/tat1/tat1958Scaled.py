@@ -12,6 +12,8 @@ from utils import StackPlots, create_from_lat_lon, read_iaga
 
 from scubas.datasets import PROFILES
 
+from tat1_bathy import percentile
+
 os.makedirs("figures/tat1/", exist_ok=True)
 
 
@@ -80,7 +82,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/", scale=1) -> pd.DataF
         sp.close()
     return
 
-def get_bathymetry(names, file_path: str = "data/1958/lat_long_bathymetry.csv") -> None:
+def get_bathymetry(names, file_path: str = "data/1958/lat_long_bathymetry-modified.csv") -> None:
     """
     Analyzes bathymetry data to segment the cable path.
 
@@ -95,6 +97,8 @@ def get_bathymetry(names, file_path: str = "data/1958/lat_long_bathymetry.csv") 
         Bathymetry analysis object, segment coordinates, and segment definitions.
     """
     segments = [
+        # (0, 10),
+        # (10, 32),
         (0, 32),
         (32, 50),
         (50, 60),
@@ -103,7 +107,7 @@ def get_bathymetry(names, file_path: str = "data/1958/lat_long_bathymetry.csv") 
         (210, 335),
         (335, 390),
         (390, 442),
-        (442, -1),
+        (445, 486),
     ]
     colors = [
         "tab:blue",
@@ -135,7 +139,7 @@ def get_bathymetry(names, file_path: str = "data/1958/lat_long_bathymetry.csv") 
         "figures/tat1/bathymetry_TAT-1.png", 
         names=names,
         xlim=[0, 3900],
-        method=[np.mean]*9,
+        method=[percentile(0.24)]+[np.mean]*7+[percentile(0.4)],
         step_color="b",
     )
     segment_coordinates = bathymetry.get_segment_coordinates()
@@ -164,11 +168,14 @@ def get_conductivity_profile(dSegments, segments, bth):
     from scubas.conductivity import ConductivityProfile  # type: ignore
 
     profiles = ConductivityProfile.compile_bined_profiles(np.array(dSegments))
+    methods=[percentile(0.24)]+[np.mean]*7+[percentile(0.4)]
+    j = 0
     for p, seg in zip(profiles, segments):
         o = bth.iloc[seg[0] : seg[1]]
-        depth = np.median(o["bathymetry.meters"])
+        depth = methods[j](o["bathymetry.meters"])#np.median(o["bathymetry.meters"])
         p.layers[0].thickness = depth  # in k meters
         print(f"Segment {seg} - Top layer thickness set to {depth/1e3} km")
+        j+=1
     return profiles
 
 def load_extracted_voltage(fname="data/1958/Voltage/TAT1Volt-rescale.csv"):
@@ -190,11 +197,12 @@ def compile_1958(gplot=False, scale=1.0):
     None
     """
     read_dataset(scale=scale)
+    # names = ["BAY", "CS-W", "DO-1", "DO-2", "DO-3", "RDG-1", "DO-4", "MAR", "DO-5", "CS-E"]
     names = ["CS-W", "DO-1", "DO-2", "DO-3", "RDG-1", "DO-4", "MAR", "DO-5", "CS-E"]
     _ = read_dataset(scale=scale)
     bathymetry, segment_coordinates, segments = get_bathymetry(names)
     # segment_names = ["FRD", "FRD", "FRD", "FRD", "HAD", "HAD", "HAD", "HAD"]
-    segment_names = ["ESK", "ESK", "ESK", "ESK", "ESK", "ESK", "ESK", "ESK", "ESK"]
+    segment_names = ["ESK", "ESK", "ESK", "ESK", "ESK", "ESK", "ESK", "ESK", "ESK", "ESK"]
     # segment_names = ["FRD", "FRD", "FRD", "FRD", "ESK", "ESK", "ESK", "ESK"]
     segment_files = [
         [f"data/1958/{name}_scaled.csv"] for name in segment_names
@@ -236,12 +244,12 @@ def compile_1958(gplot=False, scale=1.0):
         tyticks=[-90, -45, 0, 45, 90],
         aylim=[1e-3, 1e0],
         t_mul=1.0,
-        nrows=3,
-        ncols=3,
+        nrows=2,
+        ncols=5,
         text_size=15,
-        tag0_loc=[0, 3, 6],
-        tag1_loc=[6, 7, 8],
-        tag2_loc=[2, 5, 8],
+        tag0_loc=[0, 5],
+        tag1_loc=[5, 6, 7, 8, 9],
+        tag2_loc=[4, 9],
         figsize=(4, 4),
     )
     model.plot_e_fields(
@@ -472,4 +480,4 @@ def run_detailed_error_analysis(
     return
 
 if __name__ == "__main__":
-    compile_1958(True, scale=3.1) 
+    compile_1958(True, scale=2) 

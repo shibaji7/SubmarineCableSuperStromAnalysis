@@ -84,9 +84,9 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
     return
 
 def plot_e_fields():
-    # model_out = pd.read_csv("data/1958/TAT1SimVolt.csv", parse_dates=["Time"])
-    from tat1958Scaled import compile_1958
-    model_out = compile_1958(gplot=False, scale=2.5).cable.tot_params.copy().reset_index()
+    model_out = pd.read_csv("data/1958/TAT1SimVolt.csv", parse_dates=["Time"])
+    # from tat1958Scaled import compile_1958
+    # model_out = compile_1958(gplot=False, scale=2).cable.tot_params.copy().reset_index()
     xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 5)]
     sp = StackPlots(
         nrows=2, ncols=1, datetime=True, 
@@ -106,12 +106,12 @@ def plot_e_fields():
         ax.plot(model_out.Time, 2000*ix + model_out[f"E.X.0{j}"], color="b", ls="-", lw=0.6)
         ax.plot(model_out.Time, 2000*ix + model_out[f"E.Y.0{j}"] - 500, color="m", ls="-", lw=0.6)
         ix+=1
-    ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=0.44, ymax=0.532, color="g", ls="-", lw=1.5)
+    ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=0.425, ymax=0.515, color="g", ls="-", lw=1.5)
     ax.text(dt.datetime(1958, 2, 11, 0, 32), 2000*3 + 500, "2 V/km", color="g", fontsize=10)
     ax.text(0.05, 0.95, "(A)", color="k", transform=ax.transAxes, fontsize=12)
     ax.set_yticklabels([])
     tax.set_yticklabels([])
-    for j, name in enumerate(["CS-E", "DO-5","MAR", "DO-4",  "RDG-1", "DO-3","DO-2", "DO-1","CS-W",]):
+    for j, name in enumerate(["CS-E", "DO-5","MAR", "DO-4",  "RDG-1", "DO-3","DO-2", "DO-1","CS-W"]):
         ax.text(
             xlim[1] + dt.timedelta(minutes=5),
             2000*j - 300,
@@ -140,7 +140,7 @@ def plot_e_fields():
     sp.save_fig(f"figures/tat1/1958.Efield.png")
     sp.close()
 
-    model_out = compile_1958(gplot=False, scale=3.1).cable.tot_params.copy().reset_index()
+    # model_out = compile_1958(gplot=False, scale=2).cable.tot_params.copy().reset_index()
     xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 5)]
     sp = StackPlots(
         nrows=1, ncols=1, datetime=True, 
@@ -153,17 +153,18 @@ def plot_e_fields():
     ax.set_xlabel("Time, UT (11 Feb 1958)")
     ax.set_yticklabels([])
     ax.set_xlim(xlim)
-    for j, name in enumerate(["CS-E", "DO-5","MAR", "DO-4",  "RDG-1", "DO-3","DO-2", "DO-1","CS-W",]):
+    ix = 8
+    for j, name in enumerate(["CS-E", "DO-5","MAR", "DO-4",  "RDG-1", "DO-3","DO-2", "DO-1","CS-W"]):
         ax.plot(
             model_out.Time,
-            400* j + model_out[f"V(v).0{j}"],
+            400* j + model_out[f"V(v).0{ix}"],
             color="k",
             ls="-",
             lw=0.6,
         )
         ax.text(
             xlim[1] + dt.timedelta(minutes=5),
-            400*j + model_out[f"V(v).0{j}"].iloc[-1],
+            400*j + model_out[f"V(v).0{ix}"].iloc[-1],
             name,
             color="k",
             fontsize=6,
@@ -171,7 +172,8 @@ def plot_e_fields():
             va="center",
             ha="center",
         )
-    ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=0.48, ymax=0.55, color="g", ls="-", lw=1.5)
+        ix -= 1
+    ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=0.49, ymax=0.57, color="g", ls="-", lw=1.5)
     ax.text(dt.datetime(1958, 2, 11, 0, 32), 400*3 + 500, "0.2 kV", color="g", fontsize=10)
     sp.save_fig(f"figures/tat1/1958.Vs.png")
     sp.close()

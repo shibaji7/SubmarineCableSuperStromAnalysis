@@ -4,9 +4,17 @@ sys.path.extend(["py/", "py/tat1/"])
 import numpy as np
 from bathymetry import BathymetryAnalysis
 
+def percentile(n):
+    def percentile_(x):
+        return x.quantile(n)
+    percentile_.__name__ = 'percentile_{:02.0f}'.format(n*100)
+    return percentile_
+
 def create_bathymetrystacks():
-    file_path = "data/1958/lat_long_bathymetry.csv"
+    file_path = "data/1958/lat_long_bathymetry-modified.csv"
     segments = [
+        # (0, 10),
+        # (10, 32),
         (0, 32),
         (32, 50),
         (50, 60),
@@ -15,7 +23,7 @@ def create_bathymetrystacks():
         (210, 335),
         (335, 390),
         (390, 442),
-        (442, -1),
+        (445, 486),
     ]
     colors = [
         "tab:blue",
@@ -42,12 +50,13 @@ def create_bathymetrystacks():
     # Initialize and use the BathymetryAnalysis class
     bathymetry = BathymetryAnalysis(file_path, segments, colors)
     bathymetry.load_data()
+    # names = ["BAY", "CS-W", "DO-1", "DO-2", "DO-3", "RDG-1", "DO-4", "MAR", "DO-5", "CS-E"]
     names = ["CS-W", "DO-1", "DO-2", "DO-3", "RDG-1", "DO-4", "MAR", "DO-5", "CS-E"]
     bathymetry.plot_bathymetry(
         "figures/bathymetry_TAT1.png", 
         names=names, 
         xlim=[0, 3900],
-        method=[np.mean]*9,# + [np.min, np.mean, np.min, np.mean, np.median],
+        methods=[percentile(0.24)]+[np.mean]*7+[percentile(0.4)]
         step_color="b",
     )
     segment_coordinates = np.array(bathymetry.get_segment_coordinates())
