@@ -634,3 +634,36 @@ def theils_u1(y_true, y_pred):
     denominator = np.sqrt(np.mean(y_true**2)) + np.sqrt(np.mean(y_pred**2))
 
     return numerator / denominator if denominator != 0 else np.nan
+
+
+def scale_to_dec(df, dcl_from, dcl_to):
+    import pyIGRF
+
+    def _apply_Hmag_(row, D):
+        XYgeo = np.array([[row["X"]], [row["Y"]]])
+        R = np.array([
+            [np.cos(D), np.sin(D)], [-np.sin(D), np.cos(D)]
+        ])
+        XYm = np.matmul(R, XYgeo)
+        row["Xm"], row["Ym"] = XYm[0], XYgeo[1]
+        return row
+
+    def _apply_Hgeo_(row, D):
+        R = np.array([
+            [np.cos(D), np.sin(D)], [-np.sin(D), np.cos(D)]
+        ])
+        XYm = np.array([row["Xm"], row["Ym"]])
+        XYgeo = np.matmul(np.linalg.inv(R), XYm)
+        row["X"], row["Y"] = XYgeo[0,0], XYgeo[1,0]
+        return row
+
+    dcl_from, dcl_to = np.deg2rad(dcl_from), np.deg2rad(dcl_to)
+    logger.info(f"Declination (deg): {float(np.rad2deg(dcl_from))}")
+
+    df = df.apply(lambda x: _apply_Hmag_(x, dcl_from), axis=1)
+    df = df[["Xm", "Ym", "Z", "F"]]
+    dfn = df.copy()
+    dfn = dfn.apply(lambda x: _apply_Hgeo_(x, dcl_to), axis=1)
+    dfn = dfn[["X", "Y", "Z", "F"]]
+    print(dfn.head())
+    return dfn

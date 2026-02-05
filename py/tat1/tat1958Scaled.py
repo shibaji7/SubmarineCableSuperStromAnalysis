@@ -13,6 +13,7 @@ from utils import StackPlots, create_from_lat_lon, read_iaga
 from scubas.datasets import PROFILES
 
 from tat1_bathy import percentile
+from utils import scale_to_dec
 
 os.makedirs("figures/tat1/", exist_ok=True)
 
@@ -41,7 +42,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/", scale=1) -> pd.DataF
         frames[stn] = pd.concat([read_iaga(f) for f in files])
     xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 5)]
     # Plot processed data
-    sp = StackPlots(nrows=len(stns), ncols=1, datetime=True, figsize=(6, 4), text_size=12)
+    sp = StackPlots(nrows=len(stns)+1, ncols=1, datetime=True, figsize=(6, 4), text_size=12)
     for stn, coord in zip(stns, coords):
         data = frames[stn]
         data.drop_duplicates().sort_index(inplace=True)
@@ -73,6 +74,41 @@ def read_dataset(base_path: str = "data/1958/scaled_data/", scale=1) -> pd.DataF
             ax=ax,
             interval=1,
         )
+        if stn == "ESK":
+            dfn = scale_to_dec(data, -10.53, -28.76)
+            dfn = dfn[(dfn.index >= xlim[0]) & (dfn.index < xlim[1])]
+            _, ax = sp.plot_stack_plots(
+                dfn.index,
+                dfn.X - np.median(dfn.X.iloc[:60]),
+                ylim=[-1500, 1500],
+                label=r"$B_x$",
+                interval=6,
+            )
+            sp.plot_stack_plots(
+                dfn.index,
+                dfn.Y - np.median(dfn.Y.iloc[:60]),
+                ylim=[-1500, 1500],
+                label=r"$B_y$",
+                color="r",
+                ax=ax,
+                interval=6,
+            )
+            sp.plot_stack_plots(
+                dfn.index,
+                dfn.Z - np.median(dfn.Z.iloc[:60]),
+                ylim=[-1500, 1500],
+                label=r"$B_z$",
+                xlabel="Time, UT since 0 UT on 11 Feb 1958",
+                color="k",
+                ylabel=f"$B[cla]$, nT",
+                xlim=xlim,
+                ax=ax,
+                interval=1,
+            )
+            dfn.index = dfn.index - dt.timedelta(minutes=2)
+            dfn.Z, dfn.X, dfn.Y = dfn.Z*scale, dfn.X*scale, dfn.Y*scale
+            dfn.to_csv(f"data/1958/CLA_scaled.csv", header=True, index=True, float_format="%g")
+
         ax.legend(loc=2, fontsize=12)
         data = data[(data.index >= xlim[0]) & (data.index < xlim[1])]
         data.index = data.index - dt.timedelta(minutes=2)
@@ -139,8 +175,8 @@ def get_bathymetry(names, file_path: str = "data/1958/lat_long_bathymetry-modifi
         "figures/tat1/bathymetry_TAT-1.png", 
         names=names,
         xlim=[0, 3900],
-        # method=[percentile(0.25)]+[np.mean]*7+[percentile(0.4)],
-        method = [np.max]*9,
+        method=[percentile(0.25)]+[np.mean]*7+[percentile(0.4)],
+        # method = [np.max]*9,
         step_color="b",
     )
     segment_coordinates = bathymetry.get_segment_coordinates()
@@ -169,8 +205,8 @@ def get_conductivity_profile(dSegments, segments, bth):
     from scubas.conductivity import ConductivityProfile  # type: ignore
 
     profiles = ConductivityProfile.compile_bined_profiles(np.array(dSegments))
-    # methods=[percentile(0.25)]+[np.mean]*7+[percentile(0.4)]
-    methods = [np.max]*9
+    methods=[percentile(0.25)]+[np.mean]*7+[percentile(0.4)]
+    # methods = [np.max]*9
     j = 0
     for p, seg in zip(profiles, segments):
         o = bth.iloc[seg[0] : seg[1]]
@@ -204,7 +240,7 @@ def compile_1958(gplot=False, scale=1.0):
     _ = read_dataset(scale=scale)
     bathymetry, segment_coordinates, segments = get_bathymetry(names)
     # segment_names = ["FRD", "FRD", "FRD", "FRD", "HAD", "HAD", "HAD", "HAD"]
-    segment_names = ["ESK", "ESK", "ESK", "ESK", "ESK", "ESK", "ESK", "ESK", "ESK", "ESK"]
+    segment_names = ["CLA", "CLA", "CLA", "CLA", "CLA", "ESK", "ESK", "ESK", "ESK"]
     # segment_names = ["FRD", "FRD", "FRD", "FRD", "ESK", "ESK", "ESK", "ESK"]
     segment_files = [
         [f"data/1958/{name}_scaled.csv"] for name in segment_names

@@ -260,4 +260,4 @@ def toGeoMag_Domain():
     return
 
 if __name__ == "__main__":
-    toGeoMag_Domain()
+    plot_e_fields()
