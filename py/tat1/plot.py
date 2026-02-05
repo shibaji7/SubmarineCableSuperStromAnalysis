@@ -184,12 +184,22 @@ def toGeoMag_Domain():
     import pyIGRF
     from tat1958Scaled import read_dataset
 
-    def _apply_Hmag_(row):
-        Xg, Yg = row["X"], row["Y"]
-        row["Xm"], row["Ym"] = (
-            ((np.cos(D) * Xg) + (np.sin(D) * Yg)),
-            ((-np.sin(D) * Xg) + (np.cos(D) * Yg))
-        )
+    def _apply_Hmag_(row, D):
+        XYgeo = np.array([[row["X"]], [row["Y"]]])
+        R = np.array([
+            [np.cos(D), np.sin(D)], [-np.sin(D), np.cos(D)]
+        ])
+        XYm = np.matmul(R, XYgeo)
+        row["Xm"], row["Ym"] = XYm[0], XYgeo[1]
+        return row
+
+    def _apply_Hgeo_(row, D):
+        R = np.array([
+            [np.cos(D), np.sin(D)], [-np.sin(D), np.cos(D)]
+        ])
+        XYm = np.array([row["Xm"], row["Ym"]])
+        XYgeo = np.matmul(np.linalg.inv(R), XYm)
+        row["X"], row["Y"] = XYgeo[0], XYgeo[1]
         return row
     
     data = read_dataset()["ESK"]
@@ -199,12 +209,19 @@ def toGeoMag_Domain():
     D, I, H, X, Y, Z, F = pyIGRF.igrf_value(lat, lon, alt_km, date.year)
     D = np.deg2rad(D)
     logger.info(f"Declination (deg): {float(np.rad2deg(D))}")
-    data = data.apply(lambda x: _apply_Hmag_(x), axis=1)
+    data = data.apply(lambda x: _apply_Hmag_(x, D), axis=1)
     data.index = data.index - dt.timedelta(minutes=2)
+
+    D = np.deg2rad(-28.76)
+    # D = np.deg2rad(-40)
+    logger.info(f"Declination (deg): {float(np.rad2deg(D))}")
+    data_new = data.copy()
+    data_new = data.apply(lambda x: _apply_Hgeo_(x, D), axis=1)
+
 
     xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 5)]
     sp = StackPlots(
-        nrows=2, ncols=1, datetime=True, 
+        nrows=3, ncols=1, datetime=True, 
         figsize=(8, 3), text_size=12,    
     )
     ax = sp.axes[0]
@@ -215,15 +232,28 @@ def toGeoMag_Domain():
     ax.plot(data.index, data.X - np.median(data.X.iloc[:60]), color="r", ls="-", label="$B_x$")
     ax.plot(data.index, data.Y - np.median(data.Y.iloc[:60]), color="k", ls="-", label="$B_y$")
     ax.legend(loc=2, fontsize=10)
+    ax.set_ylim(-1000, 1000)
     ax.set_xlim(xlim)
 
     ax = sp.axes[1]
     ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
     ax.set_ylabel("$\widetilde{B}_{MAG}$, nT")
-    ax.set_xlabel("Time, UT (11 Feb 1958)")
+    # ax.set_xlabel("Time, UT (11 Feb 1958)")
     ax.plot(data.index, data.Xm - np.median(data.Xm.iloc[:60]), color="r", ls="-")
     ax.plot(data.index, data.Ym - np.median(data.Ym.iloc[:60]), color="k", ls="-")
+    ax.set_xlim(xlim)
+    ax.set_ylim(-1000, 1000)
+
+    ax = sp.axes[2]
+    ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+    ax.set_ylabel("$\widetilde{B}_{GEO} [W]$, nT")
+    ax.set_xlabel("Time, UT (11 Feb 1958)")
+    ax.plot(data_new.index, data_new.X - np.median(data_new.X.iloc[:60]), color="r", ls="-", label="$B_x$")
+    ax.plot(data_new.index, data_new.Y - np.median(data_new.Y.iloc[:60]), color="k", ls="-", label="$B_y$")
+    ax.legend(loc=2, fontsize=10)
+    ax.set_ylim(-1000, 1000)
     ax.set_xlim(xlim)
     sp.save_fig(f"figures/tat1/1958.Data.png")
     sp.close()
