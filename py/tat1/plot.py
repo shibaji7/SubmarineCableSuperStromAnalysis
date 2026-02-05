@@ -13,6 +13,7 @@ from utils import StackPlots, create_from_lat_lon, read_iaga
 
 from mpl_toolkits.axisartist.grid_finder import DictFormatter, FixedLocator
 import matplotlib.dates as mdates
+import datetime as dt
 
 os.makedirs("figures/1958/", exist_ok=True)
 
@@ -179,5 +180,55 @@ def plot_e_fields():
     sp.close()
     return
 
+def toGeoMag_Domain():
+    import ppigrf
+    from tat1958Scaled import read_dataset
+
+    def _apply_Hmag_(row):
+        Xg, Yg = row["X"], row["Y"]
+        row["Xm"], row["Ym"] = (
+            ((np.cos(D) * Xg) + (np.sin(D) * Yg))[0],
+            ((-np.sin(D) * Xg) + (np.cos(D) * Yg))[0]
+        )
+        return row
+    
+    data = read_dataset()["ESK"]
+    lat, lon, alt_km, date = (
+        55.2678, -3.1757, 0.0, dt.datetime(1958, 2, 11, 0)
+    )
+    Bn, Be, Bd = ppigrf.igrf(lat, lon, alt_km, date)
+    D = np.arctan2(Be, Bn)
+    
+    logger.info(f"Declination (deg): {float(np.rad2deg(D))}")
+    data = data.apply(lambda x: _apply_Hmag_(x), axis=1)
+    data.index = data.index - dt.timedelta(minutes=2)
+
+    xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 5)]
+    sp = StackPlots(
+        nrows=2, ncols=1, datetime=True, 
+        figsize=(8, 3), text_size=12,    
+    )
+    ax = sp.axes[0]
+    ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+    ax.set_ylabel("$\widetilde{B}_{GEO}$, nT")
+    # ax.set_xlabel("Time, UT (11 Feb 1958)")
+    ax.plot(data.index, data.X - np.median(data.X.iloc[:60]), color="r", ls="-", label="$B_x$")
+    ax.plot(data.index, data.Y - np.median(data.Y.iloc[:60]), color="k", ls="-", label="$B_y$")
+    ax.legend(loc=2, fontsize=10)
+    ax.set_xlim(xlim)
+
+    ax = sp.axes[1]
+    ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+    ax.set_ylabel("$\widetilde{B}_{MAG}$, nT")
+    ax.set_xlabel("Time, UT (11 Feb 1958)")
+    ax.plot(data.index, data.Xm - np.median(data.Xm.iloc[:60]), color="r", ls="-")
+    ax.plot(data.index, data.Ym - np.median(data.Ym.iloc[:60]), color="k", ls="-")
+    ax.set_xlim(xlim)
+    sp.save_fig(f"figures/tat1/1958.Data.png")
+    sp.close()
+    return
+
 if __name__ == "__main__":
-    plot_e_fields()
+    toGeoMag_Domain()

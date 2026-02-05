@@ -80,7 +80,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/", scale=1) -> pd.DataF
         data.to_csv(f"data/1958/{stn}_scaled.csv", header=True, index=True, float_format="%g")
         sp.save_fig("figures/tat1/1958.data.png")
         sp.close()
-    return
+    return frames
 
 def get_bathymetry(names, file_path: str = "data/1958/lat_long_bathymetry-modified.csv") -> None:
     """
@@ -139,7 +139,8 @@ def get_bathymetry(names, file_path: str = "data/1958/lat_long_bathymetry-modifi
         "figures/tat1/bathymetry_TAT-1.png", 
         names=names,
         xlim=[0, 3900],
-        method=[percentile(0.25)]+[np.mean]*7+[percentile(0.4)],
+        # method=[percentile(0.25)]+[np.mean]*7+[percentile(0.4)],
+        method = [np.max]*9,
         step_color="b",
     )
     segment_coordinates = bathymetry.get_segment_coordinates()
@@ -168,7 +169,8 @@ def get_conductivity_profile(dSegments, segments, bth):
     from scubas.conductivity import ConductivityProfile  # type: ignore
 
     profiles = ConductivityProfile.compile_bined_profiles(np.array(dSegments))
-    methods=[percentile(0.25)]+[np.mean]*7+[percentile(0.4)]
+    # methods=[percentile(0.25)]+[np.mean]*7+[percentile(0.4)]
+    methods = [np.max]*9
     j = 0
     for p, seg in zip(profiles, segments):
         o = bth.iloc[seg[0] : seg[1]]
