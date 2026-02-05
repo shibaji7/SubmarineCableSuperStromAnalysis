@@ -181,14 +181,14 @@ def plot_e_fields():
     return
 
 def toGeoMag_Domain():
-    import ppigrf
+    import pyIGRF
     from tat1958Scaled import read_dataset
 
     def _apply_Hmag_(row):
         Xg, Yg = row["X"], row["Y"]
         row["Xm"], row["Ym"] = (
-            ((np.cos(D) * Xg) + (np.sin(D) * Yg))[0],
-            ((-np.sin(D) * Xg) + (np.cos(D) * Yg))[0]
+            ((np.cos(D) * Xg) + (np.sin(D) * Yg)),
+            ((-np.sin(D) * Xg) + (np.cos(D) * Yg))
         )
         return row
     
@@ -196,9 +196,8 @@ def toGeoMag_Domain():
     lat, lon, alt_km, date = (
         55.2678, -3.1757, 0.0, dt.datetime(1958, 2, 11, 0)
     )
-    Bn, Be, Bd = ppigrf.igrf(lat, lon, alt_km, date)
-    D = np.arctan2(Be, Bn)
-    
+    D, I, H, X, Y, Z, F = pyIGRF.igrf_value(lat, lon, alt_km, date.year)
+    D = np.deg2rad(D)
     logger.info(f"Declination (deg): {float(np.rad2deg(D))}")
     data = data.apply(lambda x: _apply_Hmag_(x), axis=1)
     data.index = data.index - dt.timedelta(minutes=2)
