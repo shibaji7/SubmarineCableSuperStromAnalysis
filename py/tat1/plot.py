@@ -190,16 +190,16 @@ def toGeoMag_Domain():
             [np.cos(D), np.sin(D)], [-np.sin(D), np.cos(D)]
         ])
         XYm = np.matmul(R, XYgeo)
-        row["Xm"], row["Ym"] = XYm[0], XYgeo[1]
+        row["Xm"], row["Ym"] = XYm[0,0], XYgeo[1,0]
         return row
 
     def _apply_Hgeo_(row, D):
         R = np.array([
             [np.cos(D), np.sin(D)], [-np.sin(D), np.cos(D)]
         ])
-        XYm = np.array([row["Xm"], row["Ym"]])
+        XYm = np.array([[row["Xm"]], [row["Ym"]]])
         XYgeo = np.matmul(np.linalg.inv(R), XYm)
-        row["X"], row["Y"] = XYgeo[0], XYgeo[1]
+        row["X"], row["Y"] = XYgeo[0,0], XYgeo[1,0]
         return row
     
     data = read_dataset()["ESK"]
