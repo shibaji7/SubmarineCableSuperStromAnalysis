@@ -211,12 +211,15 @@ def toGeoMag_Domain():
     logger.info(f"Declination (deg): {float(np.rad2deg(D))}")
     data = data.apply(lambda x: _apply_Hmag_(x, D), axis=1)
     data.index = data.index - dt.timedelta(minutes=2)
+    data_recreate = data.copy()
+    data_recreate = data_recreate.apply(lambda x: _apply_Hgeo_(x, D), axis=1)
+
 
     D = np.deg2rad(-28.76)
     # D = np.deg2rad(-40)
     logger.info(f"Declination (deg): {float(np.rad2deg(D))}")
     data_new = data.copy()
-    data_new = data.apply(lambda x: _apply_Hgeo_(x, D), axis=1)
+    data_new = data_new.apply(lambda x: _apply_Hgeo_(x, D), axis=1)
 
 
     xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 5)]
@@ -229,8 +232,11 @@ def toGeoMag_Domain():
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
     ax.set_ylabel("$\widetilde{B}_{GEO}$, nT")
     # ax.set_xlabel("Time, UT (11 Feb 1958)")
-    ax.plot(data.index, data.X - np.median(data.X.iloc[:60]), color="r", ls="-", label="$B_x$")
-    ax.plot(data.index, data.Y - np.median(data.Y.iloc[:60]), color="k", ls="-", label="$B_y$")
+    ax.plot(data.index, data.X - np.median(data.X.iloc[:60]), color="r", ls="-", label="$B_x$", lw=2)
+    ax.plot(data.index, data.Y - np.median(data.Y.iloc[:60]), color="k", ls="-", label="$B_y$", lw=2.)
+
+    ax.plot(data_recreate.index, data_recreate.X - np.median(data_recreate.X.iloc[:60]), color="m", ls="--", lw=1.)
+    ax.plot(data_recreate.index, data_recreate.Y - np.median(data_recreate.Y.iloc[:60]), color="b", ls="--", lw=1.)
     ax.legend(loc=2, fontsize=10)
     ax.set_ylim(-1000, 1000)
     ax.set_xlim(xlim)
@@ -261,3 +267,4 @@ def toGeoMag_Domain():
 
 if __name__ == "__main__":
     plot_e_fields()
+    toGeoMag_Domain()
