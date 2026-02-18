@@ -82,18 +82,31 @@ def get_AJC_segments(gtype="lat"):
     return segment_coordinates[:, 0] if gtype == "lat" else segment_coordinates[:, 1]
 
 
-def get_TAT1_segments(gtype="lat"):
+def get_TAT1_segments(gtype="lat", which="old"):
     file_path = "data/1958/lat_long_bathymetry.csv"
-    segments = [
-        (0, 32),
-        (32, 50),
-        (50, 60),
-        (60, 170),
-        (170, 330),
-        (330, 410),
-        (410, 430),
-        (430, -1),
-    ]
+    segments = (
+        [
+            (0, 32),
+            (32, 50),
+            (50, 60),
+            (60, 170),
+            (170, 330),
+            (330, 410),
+            (410, 430),
+            (430, -1),
+        ] if which =="old" else \
+        [
+            (0, 32),
+            (32, 50),
+            (50, 60),
+            (60, 170),
+            (170, 210),
+            (210, 335),
+            (335, 390),
+            (390, 442),
+            (445, 486),
+        ]
+    )
     colors = [
         "tab:blue",
         "tab:orange",
@@ -321,7 +334,7 @@ SubSeaCables = SimpleNamespace(
                 -4.55,
             ],
         ),
-        TAT1=dict(Latitudes=get_TAT1_segments(), Longitudes=get_TAT1_segments("lon")),
+        TAT1=dict(Latitudes=get_TAT1_segments(which="new"), Longitudes=get_TAT1_segments("lon",which="new")),
         AJC=dict(Latitudes=get_AJC_segments(), Longitudes=get_AJC_segments("lon")),
     )
 )

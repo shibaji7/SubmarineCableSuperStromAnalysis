@@ -374,6 +374,7 @@ def _overlay_declination_contours(
         linewidths=0.45,
         alpha=0.7,
         transform=ccrs.PlateCarree(),
+        zorder=6,
     )
     _clabel_at_fixed_longitude(
         ax,
@@ -395,6 +396,7 @@ def _overlay_declination_contours(
             colors="k",
             linewidths=0.9,
             transform=ccrs.PlateCarree(),
+            zorder=6,
         )
 
 
@@ -402,8 +404,8 @@ def _overlay_geomagnetic_latitude_contours(
     ax,
     date,
     extent,
-    lon_step=1.0,
-    lat_step=1.0,
+    lon_step=2.0,
+    lat_step=2.0,
     level_step=10.0,
 ):
     """Overlay AACGM geomagnetic-latitude contours on the given Cartopy axis."""
@@ -416,7 +418,7 @@ def _overlay_geomagnetic_latitude_contours(
         )
         return
 
-    lons = np.arange(extent[0]-20, extent[1]+20 + lon_step, lon_step)
+    lons = np.arange(extent[0] - 20, extent[1] + 20 + lon_step, lon_step)
     lats = np.arange(extent[2], extent[3] + lat_step, lat_step)
     lon2d, lat2d = np.meshgrid(lons, lats)
     mlat = np.full(lon2d.shape, np.nan, dtype=float)
@@ -461,6 +463,7 @@ def _overlay_geomagnetic_latitude_contours(
         linestyles="--",
         alpha=0.65,
         transform=ccrs.PlateCarree(),
+        zorder=6,
     )
     _clabel_at_fixed_longitude(
         ax,
@@ -469,8 +472,9 @@ def _overlay_geomagnetic_latitude_contours(
         lon_label=-60.0,
         fmt=r"%d°",
         inline=True,
-        fontsize=5,
+        fontsize=10,
         colors="r",
+        zorder=6,
     )
 
 
@@ -480,7 +484,7 @@ def create_new_pane(
     central_longitude=-70,
     central_latitude=0.30,
     darray=20,
-    cx=[0.92, 0.3, 0.03, 0.3],  # Changed colorbar location to right side
+    cx=[0.92, 0.3, 0.03, 0.8],  # Changed colorbar location to right side
 ):
     ##############################################################
     # Download GEBCO data from https://www.gebco.net/data_and_products/gridded_bathymetry_data/
@@ -498,15 +502,19 @@ def create_new_pane(
     ## then you define additional attributes to the figure, like adding data, labels, colors, whatever
 
     ## initialize a matplotlib figure
-    fig = plt.figure(figsize=(4, 8), dpi=300)
+    fig = plt.figure(figsize=(6, 4), dpi=300)
 
     # proj = cartopy.crs.Stereographic(
     #     central_longitude=central_longitude,
     #     central_latitude=central_latitude,
     # )
-    proj = cartopy.crs.Orthographic(
+    # proj = cartopy.crs.Orthographic(
+    #     central_longitude=central_longitude,
+    #     central_latitude=central_latitude,
+    # )
+
+    proj = cartopy.crs.PlateCarree(
         central_longitude=central_longitude,
-        central_latitude=central_latitude,
     )
     # this creats a 'geoaxes' object and sets the projection to a cool looking orthographic projection
     ax = fig.add_subplot(
@@ -518,55 +526,85 @@ def create_new_pane(
     )
 
     # set the extent of the plot to a global view
-    plt_lons = np.arange(-180, 181, 15)
-    mark_lons = np.arange(extent[0], extent[1], 20)
-    plt_lats = np.arange(extent[1], extent[2], 10)
+    # xticks = np.arange(extent[0], extent[1] + 1e-6, 15)
+    # yticks = np.arange(extent[2], extent[3] + 1e-6, 10)
+    xticks = np.array([0, -15, -30, -45, -60, -75])
+    yticks = np.array([20, 30, 40, 50, 60, 70])
     ax.set_extent(extent, crs=cartopy.crs.PlateCarree())
-    gl = ax.gridlines(crs=cartopy.crs.PlateCarree(), linewidth=0.2)
-    gl.xlocator = mticker.FixedLocator(plt_lons)
+    gl = ax.gridlines(
+        crs=cartopy.crs.PlateCarree(),
+        linewidth=0.2,
+        draw_labels=True,
+        xlocs=mticker.FixedLocator(xticks),
+        ylocs=mticker.FixedLocator(yticks),
+    )
     gl.xformatter = LONGITUDE_FORMATTER
     gl.yformatter = LATITUDE_FORMATTER
-    gl.n_steps = 90
-    ax.mark_latitudes(plt_lats, fontsize="x-small", color="k")
-    ax.mark_longitudes(mark_lons, fontsize="x-small", color="k")
+    gl.top_labels = False
+    gl.right_labels = False
     data = da["elevation"][::darray, ::darray]
-    data = np.ma.masked_where(data >= 0, data)
+    # Keep land as NaN so only ocean is shaded by bathymetry.
+    data = data.where(data < 0)
+    import matplotlib.cm as cm
+
+    cmap = cm.get_cmap("Blues_r")
     im = ax.pcolormesh(
         da["lon"][::darray],
         da["lat"][::darray],
         data / 1e3,
         shading="auto",
-        cmap="Blues_r",
+        cmap=cmap,
         transform=ccrs.PlateCarree(),
-        vmax=1,
         vmin=-5,
+        vmax=0,
+        rasterized=True,
     )
+    
     cax = fig.add_axes(cx)
-    cb = fig.colorbar(im, cax=cax,)
-    cb.set_label("Bathymetry, km", fontsize=8)
+    cb = fig.colorbar(im, cax=cax, shrink=3)
+    cb.set_ticks([0, -1, -2, -3, -4, -5])
+    cb.set_ticklabels([0, 1000, 2000, 3000, 4000, 5000])
+    cb.ax.set_title("Depth, m", fontsize=10, pad=6, x=1.1)
     ax.set_extent(extent, crs=cartopy.crs.PlateCarree())
     # _overlay_declination_contours(ax=ax, date=date, extent=extent)
     _overlay_geomagnetic_latitude_contours(ax=ax, date=date, extent=extent)
-    ax.overaly_coast_lakes(lw=0.4, alpha=0.4)
-    ax.add_feature(cartopy.feature.LAND, facecolor="lightgray", lw=0.4)
+    ax.overaly_coast_lakes(lw=0.4, alpha=0.8)
+    GeoAxes.add_feature(
+        ax,
+        cartopy.feature.LAND,
+        facecolor="grey",
+        edgecolor="k",
+        lw=0.4,
+        zorder=5,
+        alpha=0.3
+    )
     ax.text(
-        -0.05,
-        0.99,
-        "Coord: Geo",  # Changed to right side of figure
+        -0.15,
+        0.5,
+        "Latitude",  # Changed to right side of figure
         ha="left",
-        va="top",
+        va="center",
         transform=ax.transAxes,
-        fontsize=8,
+        fontsize=12,
         rotation=90,
+    )
+    ax.text(
+        0.5,
+        -0.2,
+        "Longitude",  # Changed to right side of figure
+        ha="center",
+        va="bottom",
+        transform=ax.transAxes,
+        fontsize=12,
     )
     ax.text(
         0.95,
         1.05,
-        "",  # (f"{date_string(date)}"),
+        "Coord: Geo",  # (f"{date_string(date)}"),
         ha="right",
         va="center",
         transform=ax.transAxes,
-        fontsize=8,
+        fontsize=10,
     )
     return fig, ax
 
@@ -578,8 +616,8 @@ def create_bathymetrymap_NA(
         date, 
         central_longitude=-30,
         central_latitude=50,
-        extent=[-80, 10, 30, 70], darray=20,
-        cx=[0.92, 0.4, 0.03, 0.2], 
+        extent=[-80, 10, 29, 71], darray=20,
+        cx=[0.92, 0.2, 0.03, 0.5], 
     )
     for cbl, color in zip(cables, colors):
         cable = getattr(SubSeaCables, cbl)
@@ -590,6 +628,7 @@ def create_bathymetrymap_NA(
             s=5,
             c=color,
             transform=ccrs.PlateCarree(),
+            zorder=6,
         )
         ax.plot(
             cable["Longitudes"],
@@ -623,8 +662,9 @@ def create_bathymetrymap_NA(
         [38.3004, 55.2678],
         marker="D",
         s=5,
-        c="k",
+        c="r",
         transform=ccrs.PlateCarree(),
+        zorder=6,
     )
     ax.text(
         -77.4588,
@@ -633,9 +673,10 @@ def create_bathymetrymap_NA(
         ha="center",
         va="bottom",
         transform=ccrs.PlateCarree(),
-        fontsize=8,
-        fontdict={"color": "k"},
+        fontsize=10,
+        fontdict={"color": "r"},
         rotation=90,
+        zorder=6,
     )
     # ax.text(
     #     -3.1757+2,
@@ -655,8 +696,9 @@ def create_bathymetrymap_NA(
         ha="center",
         va="bottom",
         transform=ccrs.PlateCarree(),
-        fontsize=8,
-        fontdict={"color": "k"},
+        fontsize=10,
+        fontdict={"color": "r"},
+        zorder=6,
     )
     # ax.text(
     #     -52.7453,
