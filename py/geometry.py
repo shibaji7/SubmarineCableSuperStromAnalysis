@@ -285,6 +285,37 @@ class CartoBase(GeoAxes):
 register_projection(CartoBase)
 
 
+def _clabel_at_fixed_longitude(
+    ax,
+    contour_set,
+    extent,
+    lon_label=-90.0,
+    lat_pad=1.0,
+    **kwargs,
+):
+    """Place contour labels along a fixed longitude in projected axis coordinates."""
+    lon_min, lon_max, lat_min, lat_max = extent
+    if len(contour_set.levels) == 0:
+        return
+
+    lon_fixed = float(np.clip(lon_label, lon_min + 1e-3, lon_max - 1e-3))
+    lat_targets = np.linspace(
+        lat_min + lat_pad, lat_max - lat_pad, len(contour_set.levels)
+    )
+    lon_targets = np.full_like(lat_targets, lon_fixed, dtype=float)
+    xy = ax.projection.transform_points(ccrs.PlateCarree(), lon_targets, lat_targets)
+    manual = [(p[0], p[1]) for p in xy if np.isfinite(p[0]) and np.isfinite(p[1])]
+    if not manual:
+        return
+
+    # Place at most one label per contour level; skip levels that cannot be labeled.
+    for level, point in zip(contour_set.levels, manual):
+        try:
+            ax.clabel(contour_set, levels=[float(level)], manual=[point], **kwargs)
+        except (TypeError, IndexError, ValueError):
+            continue
+
+
 def _overlay_declination_contours(
     ax,
     date,
@@ -344,7 +375,16 @@ def _overlay_declination_contours(
         alpha=0.7,
         transform=ccrs.PlateCarree(),
     )
-    ax.clabel(cs, fmt="%d°", inline=True, fontsize=6, colors="r")
+    _clabel_at_fixed_longitude(
+        ax,
+        cs,
+        extent=extent,
+        lon_label=-90.0,
+        fmt="%d°",
+        inline=True,
+        fontsize=6,
+        colors="r",
+    )
 
     if (levels.min() <= 0.0) and (levels.max() >= 0.0):
         ax.contour(
@@ -364,7 +404,7 @@ def _overlay_geomagnetic_latitude_contours(
     extent,
     lon_step=1.0,
     lat_step=1.0,
-    level_step=5.0,
+    level_step=10.0,
 ):
     """Overlay AACGM geomagnetic-latitude contours on the given Cartopy axis."""
     try:
@@ -376,7 +416,7 @@ def _overlay_geomagnetic_latitude_contours(
         )
         return
 
-    lons = np.arange(extent[0], extent[1] + lon_step, lon_step)
+    lons = np.arange(extent[0]-20, extent[1]+20 + lon_step, lon_step)
     lats = np.arange(extent[2], extent[3] + lat_step, lat_step)
     lon2d, lat2d = np.meshgrid(lons, lats)
     mlat = np.full(lon2d.shape, np.nan, dtype=float)
@@ -422,7 +462,16 @@ def _overlay_geomagnetic_latitude_contours(
         alpha=0.65,
         transform=ccrs.PlateCarree(),
     )
-    ax.clabel(cs, fmt=r"%d° MLAT", inline=True, fontsize=5, colors="r")
+    _clabel_at_fixed_longitude(
+        ax,
+        cs,
+        extent=extent,
+        lon_label=-60.0,
+        fmt=r"%d°",
+        inline=True,
+        fontsize=5,
+        colors="r",
+    )
 
 
 def create_new_pane(
