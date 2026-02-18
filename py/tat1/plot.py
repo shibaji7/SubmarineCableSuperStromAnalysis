@@ -86,6 +86,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
 
 def plot_e_fields():
     model_out = pd.read_csv("data/1958/TAT1SimVolt.csv", parse_dates=["Time"])
+    print("?????????", model_out["Vt(v)"].min(),model_out["Vt(v)"].max())
     # from tat1958Scaled import compile_1958
     # model_out = compile_1958(gplot=False, scale=2).cable.tot_params.copy().reset_index()
     xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 5)]
@@ -265,6 +266,59 @@ def toGeoMag_Domain():
     sp.close()
     return
 
+def plot_e_fields_edge():
+    model_out = pd.read_csv("data/1958/TAT1SimVolt.csv", parse_dates=["Time"])
+    # from tat1958Scaled import compile_1958
+    # model_out = compile_1958(gplot=False, scale=2).cable.tot_params.copy().reset_index()
+    xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 5)]
+    sp = StackPlots(
+        nrows=1, ncols=1, datetime=True, 
+        figsize=(6, 4), text_size=12, 
+    )
+    ax = sp.axes[0]
+
+    ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+    ax.plot(model_out.Time, 6000 + model_out[f"E.X.00.left"], color="b", ls="-", lw=0.6, label="$E_x$")
+    ax.plot(model_out.Time, 4000 + model_out[f"E.Y.00.left"], color="r", ls="-", lw=0.6, label="$E_y$")
+    ax.legend(loc=3, fontsize=10)
+    ax.text(
+        xlim[1] + dt.timedelta(minutes=5),
+        5000+model_out[f"E.X.00.left"].iloc[-1],
+        "CS-W",
+        color="k",
+        fontsize=10,
+        rotation=90,
+        va="center",
+        ha="center",
+    )
+
+    ax.plot(model_out.Time, -4000 + model_out[f"E.X.08.right"], color="b", ls="-", lw=0.6)
+    ax.plot(model_out.Time, -6000 + model_out[f"E.Y.08.right"], color="r", ls="-", lw=0.6)
+    ax.text(
+        xlim[1] + dt.timedelta(minutes=5),
+        -5000+model_out[f"E.X.08.right"].iloc[-1],
+        "CS-E",
+        color="k",
+        fontsize=10,
+        rotation=90,
+        va="center",
+        ha="center",
+    )
+    
+    ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=12500/17000, ymax=14500/17000, color="g", ls="-", lw=1.5)
+    ax.text(dt.datetime(1958, 2, 11, 0, 32), 4500, "2 V/km", color="g", fontsize=10)
+
+    ax.set_ylim(-8500, 8500)
+    ax.set_xlim(xlim)
+    ax.set_ylabel("E fields, V/km")
+    ax.set_xlabel("Time, UT (11 Feb 1958)")
+    ax.set_yticklabels([])
+    sp.save_fig(f"figures/tat1/1958.EdgeEFields.png")
+    sp.close()
+    return
+
 if __name__ == "__main__":
     plot_e_fields()
-    toGeoMag_Domain()
+    plot_e_fields_edge()
+    # toGeoMag_Domain()

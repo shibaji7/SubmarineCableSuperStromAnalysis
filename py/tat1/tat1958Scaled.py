@@ -240,8 +240,9 @@ def compile_1958(gplot=False, scale=1.0):
     _ = read_dataset(scale=scale)
     bathymetry, segment_coordinates, segments = get_bathymetry(names)
     # segment_names = ["FRD", "FRD", "FRD", "FRD", "HAD", "HAD", "HAD", "HAD"]
-    segment_names = ["CLA", "CLA", "CLA", "CLA", "CLA", "ESK", "ESK", "ESK", "ESK"]
+    # segment_names = ["CLA", "CLA", "CLA", "CLA", "CLA", "ESK", "ESK", "ESK", "ESK"]
     # segment_names = ["FRD", "FRD", "FRD", "FRD", "ESK", "ESK", "ESK", "ESK"]
+    segment_names = ["CS-W", "DO-1", "DO-2", "DO-3", "RDG-1", "DO-4", "MAR", "DO-5", "CS-E"]
     segment_files = [
         [f"data/1958/{name}_scaled.csv"] for name in segment_names
     ]
@@ -252,8 +253,8 @@ def compile_1958(gplot=False, scale=1.0):
         segment_coordinates,
         profiles,
         names=names,
-        left_active_termination=PROFILES.LD,
-        right_active_termination=PROFILES.LD,
+        left_active_termination=PROFILES.LD0,
+        right_active_termination=PROFILES.LD0,
     )
 
     model = SCUBASModel(
@@ -268,85 +269,108 @@ def compile_1958(gplot=False, scale=1.0):
     model.run_cable_segment("data/1958/TAT1SimVolt.csv")
 
     xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 5)]
-    model.plot_TS_with_others(
-        fname="figures/tat1/1958.Scubas.png",
-        date_lim=xlim,
-        fig_title="SCUBAS, Time: UT since 0 UT on 11 Feb 1958",
-        text_size=10, ylim=[-3000, 3000]
+    model.plot_e_field_along_cable(
+        fname="figures/tat1/1958.E_along_Cable.png",
+        xlim=xlim,
+        fig_title="Electric field along cable segments",
+        names=names,
     )
 
-    model.plot_profiles(
-        fname="figures/tat1/1958.Profiles.png",
-        xlim=[1e-6, 1e-2],
-        tylim=[-90, 90],
-        tyticks=[-90, -45, 0, 45, 90],
-        aylim=[1e-3, 1e0],
-        t_mul=1.0,
-        nrows=2,
-        ncols=5,
-        text_size=15,
-        tag0_loc=[0, 5],
-        tag1_loc=[5, 6, 7, 8, 9],
-        tag2_loc=[4, 9],
-        figsize=(4, 4),
-    )
-    model.plot_e_fields(
-        fname="figures/tat1/1958.Scubas.Exfield.png",
-        date_lim=[dt.datetime(1958, 2, 10, 16), dt.datetime(1958, 2, 11, 8)],
-        fig_title=r"$E_x$-field / Time: UT since 16 UT on 10 Feb 1958",
-        text_size=15,
-        ylim=[-1000, 1000],
-        component="X",
-        groups=[[0, 1, 2], [3, 4, 5], [6, 7]],
-    )
-    model.plot_e_fields(
-        fname="figures/tat1/1958.Scubas.Eyfield.png",
-        date_lim=[dt.datetime(1958, 2, 10, 16), dt.datetime(1958, 2, 11, 8)],
-        fig_title=r"$E_y$-field / Time: UT since 16 UT on 10 Feb 1958",
-        text_size=15,
-        ylim=[-1000, 1000],
-        component="Y",
-        groups=[[0, 1, 2], [3, 4, 5], [6, 7]],
-    )
-    obs = load_extracted_voltage()
-    model.plot_zoomedin_analysis(
-        fname="figures/tat1/1958.Scubas.Compare.png",
-        inputs=obs,
-        date_lims=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)],
-        ylim=[-3000, 3000],
-        interval=30,
-        mult=-1,
-    )
-    run_detailed_error_analysis(
-        inputs=obs,
-        cable=model.cable,
-        date_lims=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)],
-        fnames=[
-            "figures/tat1/1958.Error.qq.png",
-        ],
-    )
-    Dst1958 = pd.read_csv(
-        "data/1958/Dst.csv",
-        skiprows=17,                # Skip metadata/header lines
-        dtype={"DATE": str, "TIME": str, "DOY": int, "DST": float},
+    Ae1958 = pd.read_csv(
+        "data/1958/AE.csv",
+        skiprows=17,  # Skip metadata/header lines
+        names=["DATE", "TIME", "DOY", "AE", "AU", "AL", "AO"],
+        dtype={"DATE": str, "TIME": str, "DOY": int, "AE": float, "AU": float, "AL": float, "AO": float},
         sep="\\s+",              # Use regex to split on whitespace
     )
-    Dst1958["DATETIME"] = pd.to_datetime(Dst1958["DATE"] + " " + Dst1958["TIME"])
-    Dst1958.drop(columns=["DATE", "TIME", "|"], inplace=True)
-    print(Dst1958.set_index("DATETIME").resample('1min').interpolate().head())
-    Dst1958 = Dst1958.set_index("DATETIME").resample('1min').interpolate().reset_index()
-    Dst1958 = Dst1958.rename(columns={"DATETIME": "time", "DST": "SymH"})
-    model.run_detailed_error_analysis(
-        inputs=obs,
-        date_lims=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)],
-        fnames=[
-            "figures/tat1/1958.Errors.qq.png",
-            "figures/tat1/1958.Scores.png",
-        ],
-        omni=Dst1958,
-        lims=[-3000, 3000],
+    Ae1958["DATETIME"] = pd.to_datetime(Ae1958["DATE"] + " " + Ae1958["TIME"])
+    Ae1958.drop(columns=["DATE", "TIME", "DOY"], inplace=True)
+    model.plot_V_along_cable(
+        fname="figures/tat1/1958.V_along_Cable.png",
+        xlim=xlim,
+        fig_title="Voltage along cable (segments)",
+        names=names,
+        Ae=Ae1958,
     )
-    return model
+    # model.plot_TS_with_others(
+    #     fname="figures/tat1/1958.Scubas.png",
+    #     date_lim=xlim,
+    #     fig_title="SCUBAS, Time: UT since 0 UT on 11 Feb 1958",
+    #     text_size=10, ylim=[-3000, 3000]
+    # )
+
+    # model.plot_profiles(
+    #     fname="figures/tat1/1958.Profiles.png",
+    #     xlim=[1e-6, 1e-2],
+    #     tylim=[-90, 90],
+    #     tyticks=[-90, -45, 0, 45, 90],
+    #     aylim=[1e-3, 1e0],
+    #     t_mul=1.0,
+    #     nrows=2,
+    #     ncols=5,
+    #     text_size=15,
+    #     tag0_loc=[0, 5],
+    #     tag1_loc=[5, 6, 7, 8, 9],
+    #     tag2_loc=[4, 9],
+    #     figsize=(4, 4),
+    # )
+    # model.plot_e_fields(
+    #     fname="figures/tat1/1958.Scubas.Exfield.png",
+    #     date_lim=[dt.datetime(1958, 2, 10, 16), dt.datetime(1958, 2, 11, 8)],
+    #     fig_title=r"$E_x$-field / Time: UT since 16 UT on 10 Feb 1958",
+    #     text_size=15,
+    #     ylim=[-1000, 1000],
+    #     component="X",
+    #     groups=[[0, 1, 2], [3, 4, 5], [6, 7]],
+    # )
+    # model.plot_e_fields(
+    #     fname="figures/tat1/1958.Scubas.Eyfield.png",
+    #     date_lim=[dt.datetime(1958, 2, 10, 16), dt.datetime(1958, 2, 11, 8)],
+    #     fig_title=r"$E_y$-field / Time: UT since 16 UT on 10 Feb 1958",
+    #     text_size=15,
+    #     ylim=[-1000, 1000],
+    #     component="Y",
+    #     groups=[[0, 1, 2], [3, 4, 5], [6, 7]],
+    # )
+    # obs = load_extracted_voltage()
+    # model.plot_zoomedin_analysis(
+    #     fname="figures/tat1/1958.Scubas.Compare.png",
+    #     inputs=obs,
+    #     date_lims=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)],
+    #     ylim=[-3000, 3000],
+    #     interval=30,
+    #     mult=-1,
+    # )
+    # run_detailed_error_analysis(
+    #     inputs=obs,
+    #     cable=model.cable,
+    #     date_lims=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)],
+    #     fnames=[
+    #         "figures/tat1/1958.Error.qq.png",
+    #     ],
+    # )
+    # Dst1958 = pd.read_csv(
+    #     "data/1958/Dst.csv",
+    #     skiprows=17,                # Skip metadata/header lines
+    #     dtype={"DATE": str, "TIME": str, "DOY": int, "DST": float},
+    #     sep="\\s+",              # Use regex to split on whitespace
+    # )
+    # Dst1958["DATETIME"] = pd.to_datetime(Dst1958["DATE"] + " " + Dst1958["TIME"])
+    # Dst1958.drop(columns=["DATE", "TIME", "|"], inplace=True)
+    # print(Dst1958.set_index("DATETIME").resample('1min').interpolate().head())
+    # Dst1958 = Dst1958.set_index("DATETIME").resample('1min').interpolate().reset_index()
+    # Dst1958 = Dst1958.rename(columns={"DATETIME": "time", "DST": "SymH"})
+    # model.run_detailed_error_analysis(
+    #     inputs=obs,
+    #     date_lims=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)],
+    #     fnames=[
+    #         "figures/tat1/1958.Errors.qq.png",
+    #         "figures/tat1/1958.Scores.png",
+    #     ],
+    #     omni=Dst1958,
+    #     lims=[-3000, 3000],
+    # )
+    # return model
 
 
 def run_detailed_error_analysis(

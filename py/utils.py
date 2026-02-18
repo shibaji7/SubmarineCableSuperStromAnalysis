@@ -658,12 +658,11 @@ def scale_to_dec(df, dcl_from, dcl_to):
         return row
 
     dcl_from, dcl_to = np.deg2rad(dcl_from), np.deg2rad(dcl_to)
-    logger.info(f"Declination (deg): {float(np.rad2deg(dcl_from))}")
+    logger.info(f"Declination to/from (deg): {'%.2f'%float(np.rad2deg(dcl_to))} {float(np.rad2deg(dcl_from))}")
 
     df = df.apply(lambda x: _apply_Hmag_(x, dcl_from), axis=1)
     df = df[["Xm", "Ym", "Z", "F"]]
     dfn = df.copy()
     dfn = dfn.apply(lambda x: _apply_Hgeo_(x, dcl_to), axis=1)
     dfn = dfn[["X", "Y", "Z", "F"]]
-    print(dfn.head())
     return dfn

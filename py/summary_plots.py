@@ -6,6 +6,30 @@ import pandas as pd
 import numpy as np
 import matplotlib.dates as mdates
 
+
+def read_kpap_txt(year=1958):
+    kp, ap = [], []
+    file = f"data/{year}/KpAp.txt"
+    with open(file, "r") as f:
+        lines = f.readlines()
+    for line in lines[1:]:
+        date = line.replace("\n", "")[:8]
+        apline, kpline = line.replace("\n", "")[28:], line.replace("\n", "")[9:28]
+        Aps = [float(apline[x:x+3].strip()) for x in range(0, 24, 3)]
+        print(date, kpline, ">>", len(kpline), "<>")
+        ap.extend([
+            dict(
+                date=dt.datetime.strptime(date+("%02d"%t),"%Y%m%d%H"),
+                Ap=Aps[t]
+            )
+            for t in range(8)
+        ])
+    ap = pd.DataFrame.from_records(ap)
+    print(ap.head())
+    return kp, ap
+
+kp1958, ap1958 = read_kpap_txt()
+kp1989, ap1989 = read_kpap_txt(1989)
 Dst1958 = pd.read_csv(
     "data/1958/Dst.csv",
     skiprows=17,                # Skip metadata/header lines
@@ -72,16 +96,18 @@ _, ax = sp.plot_stack_plots(
 )
 ax.axhline(0, color="black", linestyle="--", linewidth=0.5)
 ax.hlines(Dst1958["DST"].min(), dt.datetime(1958, 2, 11, 4), dt.datetime(1958, 2, 11, 20), color="red", linestyle=":", linewidth=1)
-ax.text(0.95, 0.1, f"(a) Dst$_m$={Dst1958['DST'].min()} nT", ha="right", va="bottom", transform=ax.transAxes)
+ax.text(0.95, 0.3, f"(a) Dst$_m$={Dst1958['DST'].min()} nT", ha="right", va="bottom", transform=ax.transAxes)
 ax.vlines(dt.datetime(1958, 2, 11, 1), -200, 100, color="m", linestyle=":", linewidth=1.5)
 ax.text(dt.datetime(1958, 2, 11, 2), 60, "1 UT (2/11)", ha="left", va="top", color="m")
 ax.tick_params(axis="y", labelcolor="b")
 ax.set_ylabel("Dst (nT)", color="b")
-# tax = ax.twinx()
-# tax.plot(Ae1958["DATETIME"], Ae1958["AE"], color="orange", linewidth=1)
-# tax.set_ylabel("AE (nT)", color="orange")
-# tax.tick_params(axis="y", labelcolor="orange")
-# tax.set_ylim(0, 3000)
+tax = ax.twinx()
+tax.plot(Ae1958["DATETIME"], Ae1958["AE"], color="orange", linewidth=1)
+tax.set_ylabel("AE (nT)", color="orange")
+# tax.step(ap1958["date"], ap1958["Ap"], color="orange", linewidth=1, where="post")
+# tax.set_ylabel("Ap (nT)", color="orange")
+tax.tick_params(axis="y", labelcolor="orange")
+tax.set_ylim(0, 3000)
 
 
 _, ax = sp.plot_stack_plots(
@@ -98,19 +124,58 @@ _, ax = sp.plot_stack_plots(
 )
 ax.axhline(0, color="black", linestyle="--", linewidth=0.5)
 ax.hlines(Dst1989["DST"].min(), dt.datetime(1989, 3, 13, 18), dt.datetime(1989, 3, 14, 6), color="red", linestyle=":", linewidth=1)
-ax.text(0.95, 0.1, f"(b) Dst$_m$={Dst1989['DST'].min()} nT", ha="right", va="bottom", transform=ax.transAxes)
+ax.text(0.95, 0.3, f"(b) Dst$_m$={Dst1989['DST'].min()} nT", ha="right", va="bottom", transform=ax.transAxes)
 ax.vlines(dt.datetime(1989, 3, 13, 1, 27), -200, 100, color="m", linestyle=":", linewidth=1.5)
 ax.text(dt.datetime(1989, 3, 13, 2), 60, "1:27 UT (3/13)", ha="left", va="top", color="m")
 ax.tick_params(axis="y", labelcolor="b")
 ax.set_ylabel("Dst (nT)", color="b")
-# tax = ax.twinx()
-# tax.plot(Ae1989["DATETIME"], Ae1989["AE"], color="orange", linewidth=1)
-# tax.set_ylabel("AE (nT)", color="orange")
-# tax.tick_params(axis="y", labelcolor="orange")
-# tax.set_ylim(0, 3000)
+tax = ax.twinx()
+tax.plot(Ae1989["DATETIME"], Ae1989["AE"], color="orange", linewidth=1)
+tax.set_ylabel("AE (nT)", color="orange")
+# tax.step(ap1989["date"], ap1989["Ap"], color="orange", linewidth=1, where="post")
+# tax.set_ylabel("Ap (nT)", color="orange")
+tax.tick_params(axis="y", labelcolor="orange")
+tax.set_ylim(0, 3000)
 
 sp.save_fig("figures/Dst_StackPlots.png")
 sp.save_fig("Validation/Figure05.png")
+sp.close()
+
+
+
+sp = StackPlots(
+    nrows=1,
+    ncols=1,
+    figsize=(8, 3),
+    datetime=True,
+    text_size=12,
+    sharex=False,
+)
+_, ax = sp.plot_stack_plots(
+    Dst1958["DATETIME"].tolist(),
+    Dst1958["DST"],
+    text="February 1958",
+    ylabel="Dst (nT)",
+    color="blue",
+    xlim=[dt.datetime(1958, 2, 9), dt.datetime(1958, 2, 13)],
+    ylim=[-700, 100],
+    interval=24,
+    dfx="%d",
+    xlabel="Day of Month (Feb 1958)",
+)
+ax.axhline(0, color="black", linestyle="--", linewidth=0.5)
+ax.hlines(Dst1958["DST"].min(), dt.datetime(1958, 2, 11, 4), dt.datetime(1958, 2, 11, 20), color="red", linestyle=":", linewidth=1)
+ax.text(0.95, 0.3, f"(a) Dst$_m$={Dst1958['DST'].min()} nT", ha="right", va="bottom", transform=ax.transAxes)
+ax.vlines(dt.datetime(1958, 2, 11, 1), -200, 100, color="m", linestyle=":", linewidth=1.5)
+ax.text(dt.datetime(1958, 2, 11, 2), 60, "1 UT (2/11)", ha="left", va="top", color="m")
+ax.tick_params(axis="y", labelcolor="b")
+ax.set_ylabel("Dst (nT)", color="b")
+tax = ax.twinx()
+tax.plot(Ae1958["DATETIME"], Ae1958["AE"], color="orange", linewidth=1)
+tax.set_ylabel("AE (nT)", color="orange")
+tax.tick_params(axis="y", labelcolor="orange")
+tax.set_ylim(0, 3000)
+sp.save_fig("figures/Dst_StackPlots.png")
 sp.close()
 
 

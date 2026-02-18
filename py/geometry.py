@@ -24,6 +24,7 @@ __status__ = "Research"
 import datetime as dt
 import os
 import sys
+import warnings
 
 import pandas as pd
 
@@ -284,6 +285,146 @@ class CartoBase(GeoAxes):
 register_projection(CartoBase)
 
 
+def _overlay_declination_contours(
+    ax,
+    date,
+    extent,
+    lon_step=1.0,
+    lat_step=1.0,
+    level_step=6,
+):
+    """Overlay geomagnetic declination (deg) contours on the given Cartopy axis."""
+    try:
+        import pyIGRF
+    except ImportError:
+        warnings.warn(
+            "pyIGRF is not installed; skipping geomagnetic declination contours.",
+            RuntimeWarning,
+        )
+        return
+
+    lons = np.arange(extent[0], extent[1] + lon_step, lon_step)
+    lats = np.arange(extent[2], extent[3] + lat_step, lat_step)
+    lon2d, lat2d = np.meshgrid(lons, lats)
+    decl = np.full(lon2d.shape, np.nan, dtype=float)
+    year_decimal = date.year + (date.timetuple().tm_yday - 1) / 365.25
+
+    for i in range(lat2d.shape[0]):
+        for j in range(lat2d.shape[1]):
+            try:
+                d, *_ = pyIGRF.igrf_value(
+                    float(lat2d[i, j]), float(lon2d[i, j]), 0.0, year_decimal
+                )
+                decl[i, j] = d
+            except Exception:
+                continue
+
+    if np.all(np.isnan(decl)):
+        warnings.warn(
+            "Declination contour computation produced no valid values.",
+            RuntimeWarning,
+        )
+        return
+
+    dmin = np.nanmin(decl)
+    dmax = np.nanmax(decl)
+    start = np.floor(dmin / level_step) * level_step
+    stop = np.ceil(dmax / level_step) * level_step
+    levels = np.arange(start, stop + 0.5 * level_step, level_step)
+    if len(levels) < 2:
+        return
+
+    cs = ax.contour(
+        lon2d,
+        lat2d,
+        decl,
+        levels=levels,
+        colors="dimgray",
+        linewidths=0.45,
+        alpha=0.7,
+        transform=ccrs.PlateCarree(),
+    )
+    ax.clabel(cs, fmt="%d°", inline=True, fontsize=6, colors="r")
+
+    if (levels.min() <= 0.0) and (levels.max() >= 0.0):
+        ax.contour(
+            lon2d,
+            lat2d,
+            decl,
+            levels=[0.0],
+            colors="k",
+            linewidths=0.9,
+            transform=ccrs.PlateCarree(),
+        )
+
+
+def _overlay_geomagnetic_latitude_contours(
+    ax,
+    date,
+    extent,
+    lon_step=1.0,
+    lat_step=1.0,
+    level_step=5.0,
+):
+    """Overlay AACGM geomagnetic-latitude contours on the given Cartopy axis."""
+    try:
+        import aacgmv2
+    except ImportError:
+        warnings.warn(
+            "aacgmv2 is not installed; skipping geomagnetic latitude contours.",
+            RuntimeWarning,
+        )
+        return
+
+    lons = np.arange(extent[0], extent[1] + lon_step, lon_step)
+    lats = np.arange(extent[2], extent[3] + lat_step, lat_step)
+    lon2d, lat2d = np.meshgrid(lons, lats)
+    mlat = np.full(lon2d.shape, np.nan, dtype=float)
+
+    for i in range(lat2d.shape[0]):
+        try:
+            mlats, _, _ = aacgmv2.get_aacgm_coord_arr(
+                lat2d[i, :], lon2d[i, :], 300, date
+            )
+            mlat[i, :] = mlats
+        except Exception:
+            for j in range(lat2d.shape[1]):
+                try:
+                    mlat[i, j], _, _ = aacgmv2.get_aacgm_coord(
+                        float(lat2d[i, j]), float(lon2d[i, j]), 300, date
+                    )
+                except Exception:
+                    continue
+
+    if np.all(np.isnan(mlat)):
+        warnings.warn(
+            "Geomagnetic-latitude contour computation produced no valid values.",
+            RuntimeWarning,
+        )
+        return
+
+    mmin = np.nanmin(mlat)
+    mmax = np.nanmax(mlat)
+    start = np.floor(mmin / level_step) * level_step
+    stop = np.ceil(mmax / level_step) * level_step
+    levels = np.arange(start, stop + 0.5 * level_step, level_step)
+    if len(levels) < 2:
+        return
+
+    cs = ax.contour(
+        lon2d,
+        lat2d,
+        mlat,
+        levels=levels,
+        colors="dimgray",
+        linewidths=0.4,
+        linestyles="--",
+        alpha=0.65,
+        transform=ccrs.PlateCarree(),
+    )
+    ax.clabel(cs, fmt=r"%d° MLAT", inline=True, fontsize=5, colors="r")
+
+
 def create_new_pane(
     date,
     extent=[-80, -5, 30, 60],
@@ -355,6 +496,8 @@ def create_new_pane(
     cb = fig.colorbar(im, cax=cax,)
     cb.set_label("Bathymetry, km", fontsize=8)
     ax.set_extent(extent, crs=cartopy.crs.PlateCarree())
+    # _overlay_declination_contours(ax=ax, date=date, extent=extent)
+    _overlay_geomagnetic_latitude_contours(ax=ax, date=date, extent=extent)
     ax.overaly_coast_lakes(lw=0.4, alpha=0.4)
     ax.add_feature(cartopy.feature.LAND, facecolor="lightgray", lw=0.4)
     ax.text(

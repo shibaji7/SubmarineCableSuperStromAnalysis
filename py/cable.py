@@ -57,21 +57,23 @@ class SCUBASModel(object):
         for i, seg in enumerate(self.cable_structure.cable_seg):
             site = seg["site"]
             site.layers[0].thickness *= tmul
-            print("<<>>>>>>",self.segment_files[i], site.layers, tmul)
-            self.tlines.append(
-                TransmissionLine(
-                    sec_id=seg["sec_id"],
-                    directed_length=dict(
-                        edge_locations=dict(initial=seg["initial"], final=seg["final"])
-                    ),
-                    elec_params=dict(
-                        site=site,
-                        width=seg["width"],
-                        flim=seg["flim"],
-                    ),
-                    active_termination=seg["active_termination"],
-                ).compile_oml(self.segment_files[i]),
+            # print("<<>>>>>>",self.segment_files[i], site.layers, tmul)
+            tl = TransmissionLine(
+                sec_id=seg["sec_id"],
+                directed_length=dict(
+                    edge_locations=dict(initial=seg["initial"], final=seg["final"])
+                ),
+                elec_params=dict(
+                    site=site,
+                    width=seg["width"],
+                    flim=seg["flim"],
+                ),
+                active_termination=seg["active_termination"],
             )
+            tl.compile_oml(self.segment_files[i])
+            self.tlines.append(tl)
+        print("XXXXXXXXXXX",self.tlines[0].term_params["left"].Efield.X.min())
+        print("XXXXXXXXXXX",self.tlines[-1].term_params["right"].Efield.X.min())
         return
 
     def run_cable_segment(self, fname=None):
@@ -80,6 +82,166 @@ class SCUBASModel(object):
         self.cable = Cable(self.tlines, self.tlines[0].components)
         if fname:
             self.cable.tot_params.to_csv(fname, index=True, header=True, float_format="%g")
+        return
+
+    def plot_V_along_cable(
+        self, 
+        fname=None,
+        xlim=[],
+        fig_title="",
+        names=[],
+        major_locator=mdates.HourLocator(interval=1),
+        ylabel=r"$\mathcal{V}_{||}=E_{||}\times L$, V",
+        xlabel="Time, UT (11 Feb 1958)",
+        Ae=[],
+    ):
+        sp = StackPlots(
+            nrows=2, ncols=1, datetime=True, 
+            figsize=(6, 4), text_size=12, 
+            gridspec_kw={
+                "height_ratios": [4, 1],
+                "wspace": 0.05,
+                "hspace": 0.05,
+            }     
+        )
+        ax = sp.axes[0]
+        ax.xaxis.set_major_locator(major_locator)
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+        ax.set_ylabel(ylabel)
+        ax.set_yticklabels([])
+        ax.set_xticklabels([])
+        ax.set_xlim(xlim)
+
+        names.reverse()
+        tlines = self.tlines.copy()
+        tlines.reverse()
+        D = np.zeros(len(tlines[0].model.Efield))
+        for j, tx, name in zip(range(len(tlines)), tlines, names):
+            Ln, Le = tx.length_north, tx.length_east
+            theta = np.arctan2(Ln, Le)
+            Eprp, Epar = (
+                (
+                    np.array(tx.model.Efield.X)*np.cos(theta)-\
+                    np.array(tx.model.Efield.X)*np.cos(theta)
+                ),
+                ( # This one is parallell
+                    np.array(tx.model.Efield.X)*np.cos(theta)+\
+                    np.array(tx.model.Efield.Y)*np.sin(theta)
+                )
+            )
+            L = np.sqrt(Ln**2+Le**2)
+            Vp = Epar*L/1000
+            ax.plot(
+                tx.model.Efield.index,
+                500* j + Vp,
+                color="k",
+                ls="-",
+                lw=0.6,
+            )
+            ax.text(
+                xlim[1] + dt.timedelta(minutes=5),
+                500*j + Vp.tolist()[-1],
+                name,
+                color="k",
+                fontsize=6,
+                rotation=90,
+                va="center",
+                ha="center",
+            )
+            D += np.array(Vp)
+        ax.set_ylim(-500, 5000)
+        ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=1000/5500, ymax=1500/5500, color="g", ls="-", lw=1.5)
+        ax.text(dt.datetime(1958, 2, 11, 0, 32), 700, "500 V", color="g", fontsize=10)
+
+        ax = sp.axes[1]
+        ax.xaxis.set_major_locator(major_locator)
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+        ax.set_ylabel("$\sum \mathcal{V}_{||}$, V")
+        ax.set_xlabel(xlabel)
+        ax.set_xlim(xlim)
+        ax.plot(
+            tx.model.Efield.index,
+            -1*D,
+            color="k",
+            ls="-",
+            lw=0.6,
+        )
+        ax.set_ylim(-2000, 2000)
+        if len(Ae) > 0:
+            ax = ax.twinx()
+            ax.xaxis.set_major_locator(major_locator)
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+            # ax.set_ylabel("AE, nT")
+            ax.plot(Ae["DATETIME"], Ae["AE"], color="orange", linewidth=1)
+            ax.set_ylabel("AE (nT)", color="orange")
+            ax.tick_params(axis="y", labelcolor="orange")
+            ax.set_ylim(0, 3000)
+        if fname:
+            sp.save_fig(fname)
+            sp.close()
+        return
+    
+    def plot_e_field_along_cable(
+        self, 
+        fname=None,
+        xlim=[],
+        fig_title="",
+        names=[],
+        major_locator=mdates.HourLocator(interval=1),
+        ylabel="$E_{||}$, mV/km",
+        xlabel="Time, UT (11 Feb 1958)",
+    ):
+        sp = StackPlots(
+            nrows=1, ncols=1, datetime=True, 
+            figsize=(6, 4), text_size=12,   
+        )
+        ax = sp.axes[0]
+        ax.xaxis.set_major_locator(major_locator)
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+        ax.set_ylabel(ylabel)
+        ax.set_xlabel(xlabel)
+        ax.set_yticklabels([])
+        ax.set_xlim(xlim)
+        names.reverse()
+        tlines = self.tlines.copy()
+        tlines.reverse()
+        for j, tx, name in zip(range(len(tlines)), tlines, names):
+            Ln, Le = tx.length_north, tx.length_east
+            theta = np.arctan2(Ln, Le)
+            Eprp, Epar = (
+                (
+                    np.array(tx.model.Efield.X)*np.cos(theta)-\
+                    np.array(tx.model.Efield.X)*np.cos(theta)
+                ),
+                ( # This one is parallell
+                    np.array(tx.model.Efield.X)*np.cos(theta)+\
+                    np.array(tx.model.Efield.Y)*np.sin(theta)
+                )
+            )
+            ax.plot(
+                tx.model.Efield.index,
+                1000* j + Epar,
+                color="k",
+                ls="-",
+                lw=0.6,
+            )
+            ax.text(
+                xlim[1] + dt.timedelta(minutes=5),
+                1000*j + Epar.tolist()[-1],
+                name,
+                color="k",
+                fontsize=6,
+                rotation=90,
+                va="center",
+                ha="center",
+            )
+        ax.set_ylim(-2000, 10000)
+
+        ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=6000/12000, ymax=7000/12000, color="g", ls="-", lw=1.5)
+        ax.text(dt.datetime(1958, 2, 11, 0, 32), 4200, "1000 mV/km", color="g", fontsize=10)
+        if fname:
+            sp.save_fig(fname)
+            sp.close()
         return
 
     def plot_TS_with_others(
