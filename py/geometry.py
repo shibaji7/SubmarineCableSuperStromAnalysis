@@ -458,7 +458,8 @@ def _overlay_geomagnetic_latitude_contours(
         lat2d,
         mlat,
         levels=levels,
-        colors="dimgray",
+        # colors="dimgray",
+        colors="orangered",
         linewidths=0.4,
         linestyles="--",
         alpha=0.65,
@@ -470,10 +471,10 @@ def _overlay_geomagnetic_latitude_contours(
         cs,
         extent=extent,
         lon_label=-60.0,
-        fmt=r"%d°",
+        fmt=r"%d° MLAT",
         inline=True,
-        fontsize=10,
-        colors="r",
+        fontsize=8,
+        colors="orangered",
         zorder=6,
     )
 
@@ -929,7 +930,122 @@ def create_bathymetrymap_AJC(
     return
 
 
+def create_bathymetrymap_tat18(
+    cables=["TAT1", "TAT8"], colors=["m", "gold"], date=dt.datetime(1989, 3, 12)
+):
+    fig, ax = create_new_pane(
+        date, 
+        central_longitude=-30,
+        central_latitude=50,
+        extent=[-80, 10, 29, 71], darray=20,
+        cx=[0.92, 0.2, 0.03, 0.5], 
+    )
+    for cbl, color in zip(cables, colors):
+        cable = getattr(SubSeaCables, cbl)
+        ax.scatter(
+            cable["Longitudes"],
+            cable["Latitudes"],
+            marker="s",
+            s=5,
+            c=color,
+            transform=ccrs.PlateCarree(),
+            zorder=6,
+        )
+        ax.plot(
+            cable["Longitudes"],
+            cable["Latitudes"],
+            ls="-",
+            lw=1.2,
+            color="k",
+            transform=ccrs.PlateCarree(),
+        )
+        for j in range(len(cable["Longitudes"]) - 1):
+            ax.text(
+                (cable["Longitudes"][j] + cable["Longitudes"][j + 1]) / 2,
+                1 + ((cable["Latitudes"][j] + cable["Latitudes"][j + 1]) / 2),
+                j + 1,
+                ha="center",
+                va="center",
+                transform=ccrs.PlateCarree(),
+                fontsize=8,
+                fontdict={"weight": "bold", "color": color},
+            )
+    ax.scatter(
+        [-77.4588, -52.7453, 355.516, -3.1757],
+        [38.3004, 47.5556, 50.995, 55.2678],
+        marker="D",
+        s=5,
+        c="r",
+        transform=ccrs.PlateCarree(),
+    )
+    # ax.scatter(
+    #     [-77.4588, -3.1757],
+    #     [38.3004, 55.2678],
+    #     marker="D",
+    #     s=5,
+    #     c="r",
+    #     transform=ccrs.PlateCarree(),
+    #     zorder=6,
+    # )
+    ax.text(
+        -77.4588,
+        1 + 38.3004,
+        "FRD",
+        ha="center",
+        va="bottom",
+        transform=ccrs.PlateCarree(),
+        fontsize=10,
+        fontdict={"color": "r"},
+        rotation=90,
+        zorder=6,
+    )
+    ax.text(
+        -3.1757+2,
+        50.995 - 2,
+        "HAD",
+        ha="center",
+        va="bottom",
+        transform=ccrs.PlateCarree(),
+        fontsize=10,
+        fontdict={"color": "r"},
+        rotation=60,
+    )
+    ax.text(
+        355.516 + 1,
+        55.2678 + 2,
+        "ESK",
+        ha="center",
+        va="bottom",
+        transform=ccrs.PlateCarree(),
+        fontsize=10,
+        fontdict={"color": "r"},
+        zorder=6,
+    )
+    ax.text(
+        -52.7453,
+        47.5556 - 3,
+        "STJ",
+        ha="center",
+        va="bottom",
+        transform=ccrs.PlateCarree(),
+        fontsize=10,
+        fontdict={"color": "r"},
+    )
+    plt.savefig(
+        os.path.join("figures", "GEBCO_2024_Bathymetry_TAT1,8.png"),
+        dpi=1000,
+        bbox_inches="tight",
+    )
+    plt.savefig(
+        os.path.join("Validation", "Figure01.png"),
+        dpi=1000,
+        bbox_inches="tight",
+    )
+    return
+
+
 if __name__ == "__main__":
     # create_bathymetrymap_NA(["TAT1", "TAT8"])
-    create_bathymetrymap_NA(["TAT1"])
+    # create_bathymetrymap_NA(["TAT1"])
+    create_bathymetrymap_tat18()
     # create_bathymetrymap_AJC()
