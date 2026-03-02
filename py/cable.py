@@ -422,12 +422,12 @@ class SCUBASModel(object):
             nrows=1,
             ncols=1,
             datetime=True,
-            figsize=(6, 2.5),
-            text_size=12,
+            figsize=(7, 3.5),
+            text_size=10,
         )
         _, ax = sp.plot_stack_scatter(
             inputs.Time,
-            inputs.Voltage,
+            inputs.Voltage/1e3,
             color="k",
             label=rf"Observations",
             ylim=ylim,
@@ -435,11 +435,11 @@ class SCUBASModel(object):
             interval=interval,
             xlim=date_lims,
             xlabel="Time, UT",
-            ylabel="Voltage, V",
+            ylabel=r"Voltage, $\times 10^3$ V (kV)",
         )
         sp.plot_stack_scatter(
             self.cable.tot_params.index,
-            mult * self.cable.tot_params["Vt(v)"],
+            mult * self.cable.tot_params["Vt(v)"]/1e3,
             color="r",
             ms=2,
             label=rf"SCUBAS",

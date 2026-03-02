@@ -166,7 +166,7 @@ _, ax = sp.plot_stack_plots(
     text="February 1958",
     ylabel="Dst (nT)",
     color="blue",
-    xlim=[dt.datetime(1958, 2, 9), dt.datetime(1958, 2, 13)],
+    xlim=[dt.datetime(1958, 2, 6), dt.datetime(1958, 2, 18)],
     ylim=[-700, 100],
     interval=24,
     dfx="%d",
@@ -184,6 +184,12 @@ tax.plot(Ae1958["DATETIME"], Ae1958["AE"], color="orange", linewidth=1)
 tax.set_ylabel("AE (nT)", color="orange")
 tax.tick_params(axis="y", labelcolor="orange")
 tax.set_ylim(0, 3000)
+dtax = ax.twinx()
+dtax.spines["right"].set_position(("axes", 1.15))
+dtax.step(ap1958["date"], ap1958["Ap"], color="red", linewidth=1, where="post")
+dtax.set_ylabel("ap (nT)", color="red")
+dtax.tick_params(axis="y", labelcolor="red")
+dtax.set_ylim(0, 400)
 sp.save_fig("figures/Dst_StackPlots.png")
 sp.close()
 
