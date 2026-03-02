@@ -40,23 +40,23 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
         files = glob.glob(base_path + f"{stn}*.dat")
         files.sort()
         frames[stn] = pd.concat([read_iaga(f) for f in files])
-    xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 5)]
+    xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 4)]
     # Plot processed data
     for stn, coord in zip(stns, coords):
-        sp = StackPlots(nrows=1, ncols=1, datetime=True, figsize=(6, 4), text_size=12)
+        sp = StackPlots(nrows=1, ncols=1, datetime=True, figsize=(7, 3), text_size=12)
         data = frames[stn]
         data.drop_duplicates().sort_index(inplace=True)
         _, ax = sp.plot_stack_plots(
             data.index,
             data.X - np.median(data.X.iloc[:60]),
-            ylim=[-1500, 1500],
+            ylim=[-1000, 700],
             label=r"$B_x$",
             interval=6,
         )
         sp.plot_stack_plots(
             data.index,
             data.Y - np.median(data.Y.iloc[:60]),
-            ylim=[-1500, 1500],
+            ylim=[-1000, 700],
             label=r"$B_y$",
             color="r",
             ax=ax,
@@ -65,9 +65,9 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
         sp.plot_stack_plots(
             data.index,
             data.Z.shift(periods=10) - np.median(data.Z.iloc[:60]),
-            ylim=[-1500, 1500],
+            ylim=[-1000, 700],
             label=r"$B_z$",
-            xlabel="Time, UT since 0 UT on 11 Feb 1958",
+            xlabel="Time, UT (11 Feb 1958)",
             color="k",
             ylabel=f"$B[{stn.lower()}]$, nT",
             xlim=xlim,
@@ -270,7 +270,7 @@ def plot_e_fields_edge():
     model_out = pd.read_csv("data/1958/TAT1SimVolt.csv", parse_dates=["Time"])
     # from tat1958Scaled import compile_1958
     # model_out = compile_1958(gplot=False, scale=2).cable.tot_params.copy().reset_index()
-    xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 5)]
+    xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 4)]
     sp = StackPlots(
         nrows=1, ncols=1, datetime=True, 
         figsize=(6, 4), text_size=12, 
@@ -322,3 +322,4 @@ if __name__ == "__main__":
     plot_e_fields()
     plot_e_fields_edge()
     # toGeoMag_Domain()
+    read_dataset()

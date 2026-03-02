@@ -148,3 +148,4 @@ def convert_datasets(base_path: str = "data/1958/scaled_data/", scale=2.2):
 
 if __name__ == "__main__":
     convert_datasets()
+    create_bathymetrystacks()
