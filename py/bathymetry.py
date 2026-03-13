@@ -334,7 +334,7 @@ SubSeaCables = SimpleNamespace(
                 -4.55,
             ],
         ),
-        TAT1=dict(Latitudes=get_TAT1_segments(which="new"), Longitudes=get_TAT1_segments("lon",which="new")),
+        TAT1=dict(Latitudes=get_TAT1_segments(which="old"), Longitudes=get_TAT1_segments("lon",which="old")),
         AJC=dict(Latitudes=get_AJC_segments(), Longitudes=get_AJC_segments("lon")),
     )
 )

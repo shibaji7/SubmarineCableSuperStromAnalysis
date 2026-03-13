@@ -55,8 +55,10 @@ dT = np.cumsum(dT)
 ssc_data["newdT"] = ssc_data.Time.apply(lambda j: (j - ssc.Time.iloc[0]).total_seconds())
 ssc_data["y"] = np.interp(ssc_data.newdT, dT, -np.array(ssc["Vt(v)"]))
 mdpe = np.median((ssc_data["Voltage"] - ssc_data["y"])/ssc_data["Voltage"])
-print(mdpe)
+mdae = np.median(np.abs((ssc_data["Voltage"] - ssc_data["y"])))
+print(mdpe, mdae)
 ax0.text(0.15, 0.3, "MdAPE: {:.2f}%".format(mdpe * 100), ha="left", va="top", transform=ax0.transAxes, fontsize=10)
+ax0.text(0.15, 0.4, "MdAE: {:.2f} V".format(mdae), ha="left", va="top", transform=ax0.transAxes, fontsize=10)
 
 
 
@@ -78,8 +80,10 @@ dT = np.cumsum(dT)
 all_data["newdT"] = all_data.Time.apply(lambda j: (j - all.Time.iloc[0]).total_seconds())
 all_data["y"] = np.interp(all_data.newdT, dT, -np.array(all["Vt(v)"]))
 mdpe = np.median((all_data["Voltage"] - all_data["y"])/all_data["Voltage"])
-print(mdpe)
+mdae = np.median(np.abs((all_data["Voltage"] - all_data["y"])))
+print(mdpe, mdae)
 ax1.text(0.15, 0.3, "MdPE: {:.2f}%".format(np.abs(mdpe) * 100), ha="left", va="top", transform=ax1.transAxes, fontsize=10)
+ax1.text(0.15, 0.4, "MdAE: {:.2f} V".format(mdae), ha="left", va="top", transform=ax1.transAxes, fontsize=10)
 
 
 
@@ -124,8 +128,10 @@ dT = np.cumsum(dT)
 all_data["newdT"] = all_data.Time.apply(lambda j: (j - all.Time.iloc[0]).total_seconds())
 all_data["y"] = np.interp(all_data.newdT, dT, -np.array(all["Vt(v)"]))
 mdpe = 0.3*np.median((all_data["Voltage"] - all_data["y"])/all_data["Voltage"])
-print(mdpe)
-ax0.text(0.01, 0.3, "MdPE: {:.2f}%".format(np.abs(mdpe) * 100), ha="left", va="top", transform=ax1.transAxes, fontsize=10)
+mdae = np.median(np.abs((all_data["Voltage"] - all_data["y"])))
+print(mdpe, mdae)
+ax0.text(0.01, 0.2, "MdPE: {:.2f}%".format(np.abs(mdpe) * 100), ha="left", va="top", transform=ax1.transAxes, fontsize=10)
+ax0.text(0.01, 0.3, "MdAE: {:.2f} V".format(mdae), ha="left", va="top", transform=ax1.transAxes, fontsize=10)
 
 
 

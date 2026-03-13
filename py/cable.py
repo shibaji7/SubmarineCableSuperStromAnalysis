@@ -72,8 +72,8 @@ class SCUBASModel(object):
             )
             tl.compile_oml(self.segment_files[i])
             self.tlines.append(tl)
-        print("XXXXXXXXXXX",self.tlines[0].term_params["left"].Efield.X.min())
-        print("XXXXXXXXXXX",self.tlines[-1].term_params["right"].Efield.X.min())
+        # print("XXXXXXXXXXX",self.tlines[0].term_params["left"].Efield.X.min())
+        # print("XXXXXXXXXXX",self.tlines[-1].term_params["right"].Efield.X.min())
         return
 
     def run_cable_segment(self, fname=None):

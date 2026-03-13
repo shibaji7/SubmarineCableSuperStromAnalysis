@@ -70,7 +70,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/") -> pd.DataFrame:
         ax.legend(loc=2, fontsize=12)
         data = data[(data.index >= xlim[0]) & (data.index < xlim[1])]
         data.index = data.index - dt.timedelta(minutes=2)
-        k = 1.
+        k = 0.95
         data.Z, data.X, data.Y = data.Z*k, data.X*k, data.Y*k
         data.to_csv(f"data/1958/{stn}_scaled.csv", header=True, index=True, float_format="%g")
         sp.save_fig("figures/1958/1958.data.png")
@@ -191,6 +191,7 @@ def compile_1958(gplot=False):
     profiles = get_conductivity_profile(
         segment_coordinates, segments, bathymetry.bathymetry_data
     )
+    print(len(profiles), len(segment_coordinates), len(segments))
     cable = create_from_lat_lon(
         segment_coordinates,
         profiles,
