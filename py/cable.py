@@ -464,6 +464,7 @@ class SCUBASModel(object):
         ],
         omni=None,
         lims=[-400,400],
+        Ae=None,
     ):
         if omni is None:
             omni = load_omni(date_lims)
@@ -485,6 +486,11 @@ class SCUBASModel(object):
         print(omni.head())
         symhNew = np.interp(inputs.newdT, dOmniTime, omni.SymH)
         print(symhNew.min(), symhNew.max())
+
+        # Ae interpolation
+        dAeTime = Ae.DATETIME.apply(lambda j: (j - o.index[0]).total_seconds())
+        AeNew = np.interp(inputs.newdT, dAeTime, Ae.AE)
+        print(AeNew.min(), AeNew.max())
 
         sp = StackPlots(nrows=2, ncols=2, figsize=(4, 2.5), sharex=False, text_size=12)
         ax = sp.axes[0]
@@ -561,14 +567,14 @@ class SCUBASModel(object):
         ax = sp.axes[3]
         # print(symhNew, e)
         ax.scatter(
-            symhNew,
+            AeNew,
             e,
             c="b",
             marker="s",
             s=4,
         )
-        ax.set_xlabel("Dst, nT", fontsize=12)
-        ax.set_xlim(-100, 0)
+        ax.set_xlabel("AE, nT", fontsize=12)
+        ax.set_xlim(0, 2500)
         ax.set_ylim(lims)
         ax.axhline(0, color="k", lw=0.8, ls="--")
         ax.set_ylabel("Residuals, V", fontsize=12)

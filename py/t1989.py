@@ -269,10 +269,21 @@ def compile_1989(gplot=False):
     Dst1989["DATETIME"] = pd.to_datetime(Dst1989["DATE"] + " " + Dst1989["TIME"])
     Dst1989.drop(columns=["DATE", "TIME", "|"], inplace=True)
     Dst1989.rename(columns={"DST": "SymH", "DATETIME":"time"}, inplace=True)
+
+    Ae1989 = pd.read_csv(
+        "data/1989/AE.csv",
+        skiprows=17,  # Skip metadata/header lines
+        # names=["DATE", "TIME", "DOY", "AE", "AU", "AL", "AO"],
+        dtype={"DATE": str, "TIME": str, "DOY": int, "AE": float, "AU": float, "AL": float, "AO": float},
+        sep="\\s+",              # Use regex to split on whitespace
+    )
+    Ae1989["DATETIME"] = pd.to_datetime(Ae1989["DATE"] + " " + Ae1989["TIME"])
+    Ae1989.drop(columns=["DATE", "TIME", "DOY", "|"], inplace=True)
+    print(Ae1989.head())
     model.run_detailed_error_analysis(
         inputs=obs,
         date_lims=[dt.datetime(1989, 3, 13, 12), dt.datetime(1989, 3, 14, 12)],
-        omni=Dst1989,
+        omni=Dst1989, Ae=Ae1989
     )
     return model, cable
 

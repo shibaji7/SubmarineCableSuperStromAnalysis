@@ -278,6 +278,17 @@ def compile_1958(gplot=False):
     print(Dst1958.set_index("DATETIME").resample('1min').interpolate().head())
     Dst1958 = Dst1958.set_index("DATETIME").resample('1min').interpolate().reset_index()
     Dst1958 = Dst1958.rename(columns={"DATETIME": "time", "DST": "SymH"})
+    Ae1958 = pd.read_csv(
+        "data/1958/AE.csv",
+        skiprows=17,  # Skip metadata/header lines
+        names=["DATE", "TIME", "DOY", "AE", "AU", "AL", "AO"],
+        dtype={"DATE": str, "TIME": str, "DOY": int, "AE": float, "AU": float, "AL": float, "AO": float},
+        sep="\\s+",              # Use regex to split on whitespace
+    )
+    print(Ae1958.head())
+    Ae1958["DATETIME"] = pd.to_datetime(Ae1958["DATE"] + " " + Ae1958["TIME"])
+    Ae1958.drop(columns=["DATE", "TIME", "DOY"], inplace=True)
+    print(Ae1958.head())
     model.run_detailed_error_analysis(
         inputs=obs,
         date_lims=[dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)],
@@ -287,6 +298,7 @@ def compile_1958(gplot=False):
         ],
         omni=Dst1958,
         lims=[-3000, 3000],
+        Ae=Ae1958,
     )
     return
 
