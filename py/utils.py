@@ -5,6 +5,30 @@ plt.style.use(["science", "ieee"])
 plt.rcParams["font.family"] = "sans-serif"
 plt.rcParams["font.sans-serif"] = ["Tahoma", "DejaVu Sans", "Lucida Grande", "Verdana"]
 plt.rcParams["text.usetex"] = False
+
+NATURE_SINGLE_COL = 3.5
+NATURE_DOUBLE_COL = 7.2
+NATURE_MAX_HEIGHT = 6.7
+
+NATURE_COLORS = {
+    'blue': '#0072B2',
+    'orange': '#D55E00', 
+    'green': '#009E73',
+    'purple': '#CC79A7',
+    ' cyan': '#56B4E9',
+    'yellow': '#F0E442',
+    'red': '#E69F00',
+    'grey': '#999999',
+}
+NATURE_SAFE_PALETTE = ['#0072B2', '#D55E00', '#009E73', '#CC79A7', '#56B4E9', '#E69F00', '#F0E442', '#999999']
+
+import matplotlib.colors as mcolors
+viridis_cmap = plt.cm.get_cmap('viridis')
+def nature_color(i, alpha=1.0):
+    c = mcolors.to_rgba(NATURE_SAFE_PALETTE[i % len(NATURE_SAFE_PALETTE)])
+    c = list(c)
+    c[3] = alpha
+    return tuple(c)
 from typing import Optional, Sequence
 
 import matplotlib as mpl
@@ -241,6 +265,202 @@ class StackPlots:
                 color=color,
             )
         return self.fig, ax
+
+
+class NatureStackPlots:
+    SINGLE_COL = 3.5
+    DOUBLE_COL = 7.2
+    MAX_HEIGHT = 6.7
+    DPI = 1000
+    
+    PALETTE = ['#0072B2', '#D55E00', '#009E73', '#CC79A7', '#56B4E9', '#E69F00', '#F0E442', '#999999']
+    
+    FONT_SIZE = {'title': 8, 'axis': 7, 'tick': 6, 'legend': 6, 'panel': 10}
+    LINE_WIDTH = 1.0
+    MARKER_SIZE = 3
+    
+    def __init__(
+        self,
+        nrows: int,
+        ncols: int,
+        datetime: bool = False,
+        figsize: tuple = None,
+        text_size: int = 7,
+        column: str = 'single',
+        sharex: bool = True,
+        gridspec_kw: Optional[dict] = None,
+    ):
+        if figsize is None:
+            if column == 'single':
+                width = self.SINGLE_COL
+            elif column == 'double':
+                width = self.DOUBLE_COL
+            else:
+                width = column
+            figsize = (width, width * 0.6)
+        
+        plt.rcParams['font.family'] = 'sans-serif'
+        plt.rcParams['font.sans-serif'] = ['Arial', 'Helvetica']
+        plt.rcParams['font.size'] = text_size
+        mpl.rc('font', size=text_size)
+        
+        self.nrows = nrows
+        self.ncols = ncols
+        self.column = column
+        self.fig, self.axes = plt.subplots(
+            nrows, ncols,
+            figsize=figsize,
+            dpi=self.DPI,
+            sharex=sharex,
+            subplot_kw={} if not datetime else {'projection': 'polar'},
+            gridspec_kw=gridspec_kw,
+        )
+        if nrows == 1 and ncols == 1:
+            self.axes = [self.axes]
+        elif nrows > 1 or ncols > 1:
+            self.axes = self.axes.flatten() if hasattr(self.axes, 'flatten') else [self.axes]
+        
+        self.plot_id = 0
+        self.datetime = datetime
+        self.fig.subplots_adjust(hspace=0.4, wspace=0.3)
+        self.panel_labels = []
+        self.next_panel = 0
+    
+    def add_panel_label(self, ax=None, position: str = 'upper left'):
+        if ax is None:
+            ax = self.axes[self.plot_id] if self.plot_id < len(self.axes) else self.axes[0]
+        label = chr(97 + self.next_panel)
+        self.next_panel += 1
+        
+        if position == 'upper left':
+            x, y = 0.02, 0.98
+            ha, va = 'left', 'top'
+        elif position == 'upper right':
+            x, y = 0.98, 0.98
+            ha, va = 'right', 'top'
+        elif position == 'lower left':
+            x, y = 0.02, 0.02
+            ha, va = 'left', 'bottom'
+        else:
+            x, y = 0.98, 0.02
+            ha, va = 'right', 'bottom'
+        
+        ax.text(
+            x, y, f"({label})",
+            transform=ax.transAxes,
+            fontdict=dict(size=self.FONT_SIZE['panel'], weight='bold'),
+            ha=ha, va=va,
+        )
+        return label
+    
+    def next_subplot(self):
+        if self.plot_id >= len(self.axes):
+            raise ValueError("No more axes available")
+        ax = self.axes[self.plot_id]
+        self.plot_id += 1
+        return ax
+    
+    def plot_stack_plots(
+        self,
+        time,
+        value,
+        title: Optional[str] = None,
+        xlabel: Optional[str] = None,
+        ylabel: Optional[str] = None,
+        label: Optional[str] = None,
+        ylim: Optional[Sequence] = None,
+        xlim: Optional[Sequence] = None,
+        color: str = None,
+        lw: float = None,
+        ls: str = "-",
+        ax: Optional[plt.Axes] = None,
+        ylabel_color: Optional[str] = "k",
+        interval: Optional[int] = 3,
+        dfx: str = "%H",
+        add_panel: bool = True,
+    ) -> tuple:
+        if color is None:
+            color = self.PALETTE[self.plot_id % len(self.PALETTE)]
+        if lw is None:
+            lw = self.LINE_WIDTH
+        
+        if ax is None:
+            ax = self.next_subplot()
+        
+        if title:
+            ax.set_title(title, fontdict=dict(size=self.FONT_SIZE['axis']))
+        if xlabel:
+            ax.set_xlabel(xlabel, fontdict=dict(size=self.FONT_SIZE['axis']))
+        if ylabel:
+            ax.set_ylabel(ylabel, color=ylabel_color, fontdict=dict(size=self.FONT_SIZE['axis']))
+        
+        if ylim:
+            ax.set_ylim(ylim)
+        if xlim:
+            ax.set_xlim(xlim)
+        
+        if self.datetime:
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=interval))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter(dfx))
+        
+        ax.plot(time, value, color=color, linewidth=lw, ls=ls, label=label)
+        
+        if add_panel:
+            self.add_panel_label(ax)
+        
+        ax.tick_params(labelsize=self.FONT_SIZE['tick'])
+        ax.tick_params(axis='y', labelcolor=ylabel_color)
+        
+        return self.fig, ax
+    
+    def plot_stack_scatter(
+        self,
+        time,
+        value,
+        ylim: Optional[Sequence] = None,
+        xlim: Optional[Sequence] = None,
+        color: str = None,
+        ax: Optional[plt.Axes] = None,
+    ) -> tuple:
+        if color is None:
+            color = self.PALETTE[self.plot_id % len(self.PALETTE)]
+        
+        if ax is None:
+            ax = self.next_subplot()
+        
+        if ylim:
+            ax.set_ylim(ylim)
+        if xlim:
+            ax.set_xlim(xlim)
+        
+        ax.plot(time, value, 'o' + color, ms=self.MARKER_SIZE)
+        
+        return self.fig, ax
+    
+    def save_fig(self, filename: str, format: str = None):
+        if format is None:
+            if filename.endswith('.pdf'):
+                format = 'pdf'
+            elif filename.endswith('.eps'):
+                format = 'eps'
+            elif filename.endswith('.svg'):
+                format = 'svg'
+            else:
+                format = 'png'
+        
+        plt.tight_layout()
+        
+        if format == 'png':
+            self.fig.savefig(filename, dpi=self.DPI, bbox_inches='tight', format='png')
+        elif format in ['pdf', 'eps', 'svg']:
+            self.fig.savefig(filename, bbox_inches='tight', format=format)
+        else:
+            self.fig.savefig(filename, dpi=self.DPI, bbox_inches='tight')
+        return
+    
+    def close(self):
+        plt.close(self.fig)
+        return
 
 
 def clean_B_fields(stns, stn_files):

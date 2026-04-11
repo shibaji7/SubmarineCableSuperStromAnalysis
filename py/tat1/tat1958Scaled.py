@@ -8,7 +8,7 @@ import pandas as pd  # type: ignore
 from bathymetry import BathymetryAnalysis
 from cable import SCUBASModel
 from loguru import logger  # type: ignore
-from utils import StackPlots, create_from_lat_lon, read_iaga
+from utils import StackPlots, NatureStackPlots, create_from_lat_lon, read_iaga
 
 from scubas.datasets import PROFILES
 
@@ -41,8 +41,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/", scale=1) -> pd.DataF
         files.sort()
         frames[stn] = pd.concat([read_iaga(f) for f in files])
     xlim=[dt.datetime(1958, 2, 11,), dt.datetime(1958, 2, 11, 5)]
-    # Plot processed data
-    sp = StackPlots(nrows=len(stns)+1, ncols=1, datetime=True, figsize=(6, 4), text_size=12)
+    sp = NatureStackPlots(nrows=len(stns)+1, ncols=1, datetime=True, figsize=(3.5, 3), text_size=7, column='single')
     for stn, coord in zip(stns, coords):
         data = frames[stn]
         data.drop_duplicates().sort_index(inplace=True)
@@ -58,7 +57,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/", scale=1) -> pd.DataF
             data.Y - np.median(data.Y.iloc[:60]),
             ylim=[-1500, 1500],
             label=r"$B_y$",
-            color="r",
+            color="#D55E00",
             ax=ax,
             interval=6,
         )
@@ -68,7 +67,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/", scale=1) -> pd.DataF
             ylim=[-1500, 1500],
             label=r"$B_z$",
             xlabel="Time, UT since 0 UT on 11 Feb 1958",
-            color="k",
+            color="#009E73",
             ylabel=f"$B[{stn.lower()}]$, nT",
             xlim=xlim,
             ax=ax,
@@ -89,7 +88,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/", scale=1) -> pd.DataF
                 dfn.Y - np.median(dfn.Y.iloc[:60]),
                 ylim=[-1500, 1500],
                 label=r"$B_y$",
-                color="r",
+                color="#D55E00",
                 ax=ax,
                 interval=6,
             )
@@ -99,7 +98,7 @@ def read_dataset(base_path: str = "data/1958/scaled_data/", scale=1) -> pd.DataF
                 ylim=[-1500, 1500],
                 label=r"$B_z$",
                 xlabel="Time, UT since 0 UT on 11 Feb 1958",
-                color="k",
+                color="#009E73",
                 ylabel=f"$B[cla]$, nT",
                 xlim=xlim,
                 ax=ax,
@@ -109,12 +108,13 @@ def read_dataset(base_path: str = "data/1958/scaled_data/", scale=1) -> pd.DataF
             dfn.Z, dfn.X, dfn.Y = dfn.Z*scale, dfn.X*scale, dfn.Y*scale
             dfn.to_csv(f"data/1958/CLA_scaled.csv", header=True, index=True, float_format="%g")
 
-        ax.legend(loc=2, fontsize=12)
+        ax.legend(loc=2, fontsize=6)
         data = data[(data.index >= xlim[0]) & (data.index < xlim[1])]
         data.index = data.index - dt.timedelta(minutes=2)
         data.Z, data.X, data.Y = data.Z*scale, data.X*scale, data.Y*scale
         data.to_csv(f"data/1958/{stn}_scaled.csv", header=True, index=True, float_format="%g")
         sp.save_fig("figures/tat1/1958.data.png")
+        sp.save_fig("figures/tat1/1958.data.pdf")
         sp.close()
     return frames
 
@@ -176,8 +176,7 @@ def get_bathymetry(names, file_path: str = "data/1958/lat_long_bathymetry-modifi
         names=names,
         xlim=[0, 3900],
         method=[percentile(0.25)]+[np.mean]*7+[percentile(0.4)],
-        # method = [np.max]*9,
-        step_color="b",
+        step_color="#0072B2",
     )
     segment_coordinates = bathymetry.get_segment_coordinates()
     print("Segment Coordinates:", segment_coordinates)
@@ -292,12 +291,6 @@ def compile_1958(gplot=False, scale=1.0):
         names=names,
         Ae=Ae1958,
     )
-    # model.plot_TS_with_others(
-    #     fname="figures/tat1/1958.Scubas.png",
-    #     date_lim=xlim,
-    #     fig_title="SCUBAS, Time: UT since 0 UT on 11 Feb 1958",
-    #     text_size=10, ylim=[-3000, 3000]
-    # )
 
     model.plot_profiles(
         fname="figures/tat1/1958.Profiles.png",
@@ -308,30 +301,13 @@ def compile_1958(gplot=False, scale=1.0):
         t_mul=1.0,
         nrows=3,
         ncols=3,
-        text_size=15,
+        text_size=7,
         tag0_loc=[0, 3, 6],
         tag1_loc=[6, 7, 8],
         tag2_loc=[2, 5, 8],
-        figsize=(4, 3),
+        figsize=(7.2, 5),
     )
-    # model.plot_e_fields(
-    #     fname="figures/tat1/1958.Scubas.Exfield.png",
-    #     date_lim=[dt.datetime(1958, 2, 10, 16), dt.datetime(1958, 2, 11, 8)],
-    #     fig_title=r"$E_x$-field / Time: UT since 16 UT on 10 Feb 1958",
-    #     text_size=15,
-    #     ylim=[-1000, 1000],
-    #     component="X",
-    #     groups=[[0, 1, 2], [3, 4, 5], [6, 7]],
-    # )
-    # model.plot_e_fields(
-    #     fname="figures/tat1/1958.Scubas.Eyfield.png",
-    #     date_lim=[dt.datetime(1958, 2, 10, 16), dt.datetime(1958, 2, 11, 8)],
-    #     fig_title=r"$E_y$-field / Time: UT since 16 UT on 10 Feb 1958",
-    #     text_size=15,
-    #     ylim=[-1000, 1000],
-    #     component="Y",
-    #     groups=[[0, 1, 2], [3, 4, 5], [6, 7]],
-    # )
+    
     obs = load_extracted_voltage()
     model.plot_zoomedin_analysis(
         fname="figures/tat1/1958.Scubas.Compare.png",
@@ -381,7 +357,6 @@ def run_detailed_error_analysis(
         "figures/tat1/1958.Error.qq.png",
     ],
 ):
-    # Case special
     x = np.array(inputs.Voltage)
     o = cable.tot_params.copy()
     o = o[
@@ -391,25 +366,17 @@ def run_detailed_error_analysis(
     dT = np.array((o.index - o.index[0]).total_seconds())
     inputs["newdT"] = inputs.Time.apply(lambda j: (j - o.index[0]).total_seconds())
     y = np.interp(inputs.newdT, dT, -np.array(o))
-    e = y - x  # Error Pred - Obs
+    e = y - x
 
-    sp = StackPlots(nrows=2, ncols=2, figsize=(4, 2.5), sharex=False, text_size=12)
+    sp = NatureStackPlots(nrows=2, ncols=2, figsize=(3.5, 3), text_size=7, column='single', sharex=False)
     ax = sp.axes[0]
-    ax.hist(e, 50, color="b", histtype="step")
-    ax.set_xlabel("Error, V", fontsize=12)
-    ax.set_ylabel("Counts", fontsize=12)
-    ax.tick_params(axis="x", labelsize=12)
+    ax.hist(e, 50, color="#0072B2", histtype="step")
+    ax.set_xlabel("Error, V", fontdict=dict(size=7))
+    ax.set_ylabel("Counts", fontdict=dict(size=7))
+    ax.tick_params(axis="x", labelsize=6)
     ax.set_xlim(-3000, 3000)
-    ax.tick_params(axis="y", labelsize=12)
-    ax.text(
-        0.05,
-        0.9,
-        "(A)",
-        ha="left",
-        va="center",
-        transform=ax.transAxes,
-        fontsize=12,
-    )
+    ax.tick_params(axis="y", labelsize=6)
+    sp.add_panel_label(ax, 'upper left')
 
     ax = sp.axes[1]
     ax.set_xlim([-3000, 3000])
@@ -422,98 +389,70 @@ def run_detailed_error_analysis(
         modelName="SCUBAS",
         addTo=sp.axes[1],
         plot_kwargs=dict(
-            c="b",
+            c="#0072B2",
             marker="s",
-            s=4,
+            s=3,
         ),
     )
     ax.set_title("")
-    ax.text(
-        0.05,
-        0.9,
-        "(B) QQ Plot",
-        ha="left",
-        va="center",
-        transform=ax.transAxes,
-        fontsize=12,
-    )
-    ax.set_xlabel("Predicted, V", fontsize=12)
-    ax.set_ylabel("Observed, V", fontsize=12)
-    ax.tick_params(axis="x", labelsize=12)
-    ax.tick_params(axis="y", labelsize=12)
+    sp.add_panel_label(ax, 'upper left')
+    ax.set_xlabel("Predicted, V", fontdict=dict(size=7))
+    ax.set_ylabel("Observed, V", fontdict=dict(size=7))
+    ax.tick_params(axis="x", labelsize=6)
+    ax.tick_params(axis="y", labelsize=6)
 
     ax = sp.axes[2]
     ax.scatter(
         x,
         e,
-        c="b",
+        c="#0072B2",
         marker="s",
-        s=4,
+        s=3,
     )
-    ax.set_xlabel("Observed, V", fontsize=12)
+    ax.set_xlabel("Observed, V", fontdict=dict(size=7))
     ax.set_xlim(-3000, 3000)
     ax.set_ylim(-3000, 3000)
-    ax.set_ylabel("Error, V", fontsize=12)
-    ax.text(
-        0.05,
-        0.9,
-        "(C) Residue",
-        ha="left",
-        va="center",
-        transform=ax.transAxes,
-        fontsize=12,
-    )
-    ax.axhline(0, color="k", lw=0.8, ls="--")
+    ax.set_ylabel("Error, V", fontdict=dict(size=7))
+    sp.add_panel_label(ax, 'upper left')
+    ax.axhline(0, color="#999999", lw=0.8, ls="--")
 
-    # Compute Scores (huber, quantile, expctile) and Isotonic fits
     from scores.processing.isoreg_impl import isotonic_fit
 
     iso_fit_result = isotonic_fit(
         fcst=y, obs=x, functional="mean", bootstraps=100, confidence_level=0.95
     )
-    # Data
     x_sorted = iso_fit_result["fcst_sorted"]
     y_lower = iso_fit_result["confidence_band_lower_values"]
     y_upper = iso_fit_result["confidence_band_upper_values"]
     y_reg = iso_fit_result["regression_values"]
     weights = iso_fit_result["fcst_counts"]
 
-    # Bounds
     total_min = min(np.min(x_sorted), np.min(y_lower))
     total_max = max(np.max(x_sorted), np.max(y_upper))
-
-    # Histogram data
     bins = np.linspace(np.min(x_sorted), np.max(x_sorted), 11)
 
     ax = sp.axes[3]
-    # Confidence band (shaded region)
     ax.fill_between(
         x_sorted,
         y_lower,
         y_upper,
-        color="lightblue",
+        color="#56B4E9",
         alpha=0.5,
         label="95% confidence band",
     )
+    ax.plot([total_min, total_max], [total_min, total_max], color="#999999", ls="--", lw=0.8)
+    ax.plot(x_sorted, y_reg, color="#0072B2")
 
-    # Diagonal reference line
-    ax.plot([total_min, total_max], [total_min, total_max], "k--")
-
-    # Regression line
-    ax.plot(x_sorted, y_reg, color="b")
-
-    # Histogram (on secondary y-axis)
     ax_hist = ax.twinx()
     ax_hist.set_xlim(-3000, 3000)
     ax_hist.set_ylim(0, 100)
-    ax_hist.hist(x_sorted, color="purple", histtype="step")
-    ax_hist.set_ylabel("Counts", color="purple")
+    ax_hist.hist(x_sorted, color="#CC79A7", histtype="step")
+    ax_hist.set_ylabel("Counts", color="#CC79A7")
 
-    # Annotations
     ax.set_xlim(-3000, 3000)
     ax.set_ylim(-3000, 3000)
     ax.set_xlabel("Predicted, V")
-    ax.set_ylabel("Observed, V", color="b")
+    ax.set_ylabel("Observed, V", color="#0072B2")
     ax.text(
         0.05,
         0.95,
@@ -521,9 +460,9 @@ def run_detailed_error_analysis(
         ha="left",
         va="top",
         transform=ax.transAxes,
-        fontsize=8,
+        fontsize=6,
         rotation=90,
-        color="r",
+        color="#D55E00",
     )
     ax.text(
         0.95,

@@ -191,57 +191,60 @@ class SCUBASModel(object):
         ylabel="$E_{||}$, mV/km",
         xlabel="Time, UT (11 Feb 1958)",
     ):
-        sp = StackPlots(
-            nrows=1, ncols=1, datetime=True, 
-            figsize=(6, 4), text_size=12,   
-        )
-        ax = sp.axes[0]
+        import matplotlib.pyplot as plt
+        plt.rcParams['font.family'] = 'sans-serif'
+        plt.rcParams['font.sans-serif'] = ['Arial']
+        plt.rcParams['font.size'] = 7
+        
+        fig, ax = plt.subplots(1, 1, figsize=(3.5, 2.5), dpi=1000)
         ax.xaxis.set_major_locator(major_locator)
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
         ax.set_ylabel(ylabel)
         ax.set_xlabel(xlabel)
         ax.set_yticklabels([])
         ax.set_xlim(xlim)
+        
+        names = list(names)
         names.reverse()
-        tlines = self.tlines.copy()
+        tlines = list(self.tlines)
         tlines.reverse()
-        for j, tx, name in zip(range(len(tlines)), tlines, names):
+        
+        colors = ['#0072B2', '#D55E00', '#009E73', '#CC79A7', '#56B4E9', '#E69F00', '#F0E442', '#999999']
+        
+        for j, (tx, name) in enumerate(zip(tlines, names)):
             Ln, Le = tx.length_north, tx.length_east
             theta = np.arctan2(Ln, Le)
-            Eprp, Epar = (
-                (
-                    np.array(tx.model.Efield.X)*np.cos(theta)-\
-                    np.array(tx.model.Efield.X)*np.cos(theta)
-                ),
-                ( # This one is parallell
-                    np.array(tx.model.Efield.X)*np.cos(theta)+\
-                    np.array(tx.model.Efield.Y)*np.sin(theta)
-                )
+            Epar = (
+                np.array(tx.model.Efield.X)*np.cos(theta) + \
+                np.array(tx.model.Efield.Y)*np.sin(theta)
             )
             ax.plot(
                 tx.model.Efield.index,
                 1000* j + Epar,
-                color="k",
+                color=colors[j % len(colors)],
                 ls="-",
-                lw=0.6,
+                lw=1.0,
             )
             ax.text(
-                xlim[1] + dt.timedelta(minutes=5),
+                xlim[1] + dt.timedelta(minutes=3),
                 1000*j + Epar.tolist()[-1],
                 name,
-                color="k",
-                fontsize=6,
+                color='#0072B2',
+                fontsize=5,
                 rotation=90,
                 va="center",
                 ha="center",
             )
+        
         ax.set_ylim(-2000, 10000)
-
-        ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=6000/12000, ymax=7000/12000, color="g", ls="-", lw=1.5)
-        ax.text(dt.datetime(1958, 2, 11, 0, 32), 4200, "1000 mV/km", color="g", fontsize=10)
+        ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=6000/12000, ymax=7000/12000, color="#009E73", ls="-", lw=1.5)
+        ax.text(dt.datetime(1958, 2, 11, 0, 32), 4200, "1000 mV/km", color="#009E73", fontsize=6)
+        ax.text(0.02, 0.98, "(a)", transform=ax.transAxes, fontdict=dict(size=10, weight='bold'), ha='left', va='top')
+        
         if fname:
-            sp.save_fig(fname)
-            sp.close()
+            fig.savefig(fname, bbox_inches='tight')
+            fig.savefig(fname.replace('.png', '.pdf'), bbox_inches='tight')
+            plt.close()
         return
 
     def plot_TS_with_others(
@@ -279,7 +282,7 @@ class SCUBASModel(object):
         text_size=10,
         nrows=4,
         ncols=2,
-        figsize=(3, 3),
+        figsize=(7.2, 5),
         ayticks=[1e-6, 1e-3, 1e0],
         tyticks=[0, 30, 45, 60, 90],
         xticks=[1e-6, 1e-3, 1e0],
@@ -417,7 +420,6 @@ class SCUBASModel(object):
     def plot_zoomedin_analysis(
         self, fname, inputs, ylim=[], date_lims=[], interval=15, mult=-1
     ):
-        # All in pyforcast tools or SCORES
         sp = StackPlots(
             nrows=1,
             ncols=1,
