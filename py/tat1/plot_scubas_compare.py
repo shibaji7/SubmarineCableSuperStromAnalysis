@@ -7,8 +7,8 @@ import matplotlib.dates as mdates
 
 def plot_scubas_compare():
     obs = pd.read_csv("data/1958/Voltage/TAT1Volt-rescale.csv", parse_dates=["Time"])
-    sim = pd.read_csv("data/1958/TAT1SimVolt.csv", parse_dates=["Time"])
-    sim_scaled = pd.read_csv("data/1958/TAT1SimVolt_1.5.csv", parse_dates=["Time"])
+    sim = pd.read_csv("data/1958/TAT1SimVolt_1.0.csv", parse_dates=["Time"])
+    sim_scaled = pd.read_csv("data/1958/TAT1SimVolt_1.8.csv", parse_dates=["Time"])
     
     plt.rcParams['font.family'] = 'sans-serif'
     plt.rcParams['font.sans-serif'] = ['Helvetica', 'Arial']
@@ -50,7 +50,7 @@ def plot_scubas_compare():
         sim_scaled_v['Vt(v)'],
         color="#009E73",
         lw=1.0,
-        label="SCUBAS [50% scaled |B| at western edge]",
+        label=fr"SCUBAS [$\sim$90% scaled |B| at western edge]",
     )
     
     obs_times = np.array([(t - obs.Time.min()).total_seconds() for t in obs.Time])
@@ -83,6 +83,7 @@ def plot_scubas_compare():
     fig.savefig("figures/tat1/1958.Scubas.Compare.png", bbox_inches='tight')
     fig.savefig("figures/tat1/1958.Scubas.Compare.pdf", bbox_inches='tight')
     plt.close()
+    print(sim_scaled_v['Vt(v)'].min(), sim_scaled_v['Vt(v)'].max())
     print("Saved: 1958.Scubas.Compare.png/pdf")
 
 

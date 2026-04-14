@@ -89,7 +89,7 @@ def convert_datasets(base_path: str = "data/1958/scaled_data/", scale=2.2):
     total_distance = sum(distances)
     print(f"Total distance along the path: {total_distance:.2f} km")
 
-    length_scales = [(1 + ((0.5*d)/total_distance)) for d in distances]
+    length_scales = [(1 + ((0.80*d)/total_distance)) for d in distances]
     stn = "ESK"
     frame = pd.DataFrame()
     files = glob.glob(base_path + f"{stn}*.dat")
@@ -114,7 +114,7 @@ def convert_datasets(base_path: str = "data/1958/scaled_data/", scale=2.2):
     names = ["CS-W", "DO-1", "DO-2", "DO-3", "RDG-1", "DO-4", "MAR", "DO-5", "CS-E"]
     for j in range(len(segment_coordinates)-1):
         l_scale = length_scales[j]
-        # scale = scale * l_scale
+        scale = scale * l_scale
         seg = segment_coordinates[j:j+2,:]
         seg_m = np.mean(seg, axis=0)
         D, I, H, X, Y, Z, F = pyIGRF.igrf_value(seg_m[0], seg_m[1], 0, 1958)
