@@ -6,13 +6,13 @@ import matplotlib.dates as mdates
 
 
 def plot_e_field_along_cable():
-    model_out = pd.read_csv("data/1958/TAT1SimVolt.csv", parse_dates=["Time"])
+    model_out = pd.read_csv("data/1958/TAT1SimVolt_1.0.csv", parse_dates=["Time"])
     
     plt.rcParams['font.family'] = 'sans-serif'
     plt.rcParams['font.sans-serif'] = ['Arial']
     plt.rcParams['font.size'] = 7
     
-    xlim = [dt.datetime(1958, 2, 11), dt.datetime(1958, 2, 11, 4)]
+    xlim = [dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)]
     names = ["CS-E", "DO-5", "MAR", "DO-4", "RDG-1", "DO-3", "DO-2", "DO-1", "CS-W"]
     
     fig, ax = plt.subplots(1, 1, figsize=(3.5, 2.5), dpi=1000)
@@ -52,8 +52,8 @@ def plot_e_field_along_cable():
             )
     
     ax.set_ylim(-2000, 11000)
-    ax.axvline(dt.datetime(1958, 2, 11, 0, 30), ymin=6000/13000, ymax=7000/13000, color="#009E73", ls="-", lw=1.5)
-    ax.text(dt.datetime(1958, 2, 11, 0, 32), 4200, "1000 mV/km", color="#009E73", fontsize=6)
+    ax.axvline(dt.datetime(1958, 2, 11, 1, 30), ymin=6000/13000, ymax=7000/13000, color="#009E73", ls="-", lw=1.5)
+    ax.text(dt.datetime(1958, 2, 11, 1, 32), 4200, "1000 mV/km", color="#009E73", fontsize=6)
     
     fig.savefig("figures/tat1/1958.E_along_Cable.png", bbox_inches='tight')
     fig.savefig("figures/tat1/1958.E_along_Cable.pdf", bbox_inches='tight')

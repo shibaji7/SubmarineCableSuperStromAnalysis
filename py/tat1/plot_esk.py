@@ -31,7 +31,7 @@ if __name__ == "__main__":
     data = read_esk_data()
     data.drop_duplicates().sort_index(inplace=True)
     
-    xlim = [dt.datetime(1958, 2, 11), dt.datetime(1958, 2, 11, 4)]
+    xlim = [dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)]
     
     gs = plt.GridSpec(1, 1)
     fig = plt.figure(figsize=(3.5, 2.5), dpi=1000)
