@@ -387,5 +387,5 @@ def create_bathymetrystacks():
 # Example usage
 if __name__ == "__main__":
     # Define input parameters
-    get_TAT1_segments()
-    # create_bathymetrystacks()
+    # get_TAT1_segments()
+    create_bathymetrystacks()

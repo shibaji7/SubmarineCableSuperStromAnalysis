@@ -1046,6 +1046,6 @@ def create_bathymetrymap_tat18(
 
 if __name__ == "__main__":
     # create_bathymetrymap_NA(["TAT1", "TAT8"])
-    create_bathymetrymap_NA(["TAT1"])
-    # create_bathymetrymap_tat18()
+    # create_bathymetrymap_NA(["TAT1"])
+    create_bathymetrymap_tat18()
     # create_bathymetrymap_AJC()
