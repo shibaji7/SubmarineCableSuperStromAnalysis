@@ -46,6 +46,22 @@ end
 %% 🌎 Create Earth
 [x, y, z] = sphere(300);
 
+% --- Axial tilt toward Sun (23.5°, realistic obliquity) ---
+sun_lon_deg = 120; % East China (Shanghai / Nanjing region)
+tilt_angle  = deg2rad(23.5);
+sun_lon_rad = deg2rad(sun_lon_deg);
+ux = -sin(sun_lon_rad);   % rotation axis = Z × Sun_dir
+uy =  cos(sun_lon_rad);
+c = cos(tilt_angle); s = sin(tilt_angle); t = 1 - c;
+R_tilt = [t*ux^2+c,  t*ux*uy,   s*uy; ...
+          t*ux*uy,   t*uy^2+c, -s*ux; ...
+         -s*uy,       s*ux,      c  ];
+pts = R_tilt * [x(:)'; y(:)'; z(:)'];
+x = reshape(pts(1,:), size(x));
+y = reshape(pts(2,:), size(y));
+z = reshape(pts(3,:), size(z));
+% --- End tilt ---
+
 figure('Color','k'); % black background (space)
 hold on;
 
@@ -58,8 +74,8 @@ surf(x, y, z, flipud(earth_texture), ...
 
 axis equal off;
 
-%% 💡 Lighting - matches Sun position (Vietnam/108°E)
-sun_lon_deg = 108;
+%% 💡 Lighting - matches Sun position (East China/120°E)
+% sun_lon_deg already set above (120); reuse it here
 sun_lon_rad = deg2rad(sun_lon_deg);
 light_pos = [cos(sun_lon_rad), sin(sun_lon_rad), 0];
 light('Position', light_pos, 'Style', 'infinite');
@@ -138,8 +154,8 @@ end
 
 %% ☀️ Geocentric Solar Magnetospheric (GSM) reference
 % GSM X-axis points toward Sun
-% Sun over Vietnam: ~108°E
-sun_lon = deg2rad(108); % Sun over Vietnam
+% Sun over East China: ~120°E
+sun_lon = deg2rad(120); % Sun over East China (Shanghai region)
 sun_lat = 0;
 
 % Sun direction vector (X-GSM)
@@ -189,8 +205,8 @@ plot3(-1.6*X_gsm_y, -1.6*Y_gsm_y,  0, 'o', 'Color',[1 0.2 0.2], 'MarkerSize', 4,
 
 % GSM labels — smaller font
 % X_GSM: Sun side label raised in Z so it clears the Earth disk in projection
-text( 2.0*X_sun,  2.0*Y_sun,  0.4, 'X_{GSM}(Sun)', 'Color','y', 'FontSize', 3.5);
-text(-1.9*X_sun, -1.9*Y_sun, -0.2, '-X_{GSM}',     'Color','y', 'FontSize', 3);
+text( 2.0*X_sun,  2.0*Y_sun,  0.6, 'X_{GSM}(Sun)', 'Color','y', 'FontSize', 3.5);
+text(-1.9*X_sun, -1.9*Y_sun,  0.1, '-X_{GSM}',     'Color','y', 'FontSize', 3);
 text(1.6*X_mag, 1.6*Y_mag, 1.6*Z_mag, 'Z_{GSM}', 'Color','g', 'FontSize', 3.5);
 text( 1.9*X_gsm_y,  1.9*Y_gsm_y,  0.15, 'Y_{GSM}',  'Color',[1 0.2 0.2], 'FontSize', 3.5);
 text(-1.9*X_gsm_y, -1.9*Y_gsm_y,  0.15, '-Y_{GSM}', 'Color',[1 0.2 0.2], 'FontSize', 3);
@@ -204,7 +220,7 @@ stations = struct( ...
     'lat',  {38.2, 55.3}, ...
     'lon',  {-77.4, -3.2}, ...
     'text_lat', {-5, -10}, ...
-    'text_lon', {-10, 6}); % UT time for each station
+    'text_lon', {-10, 3}); % UT time for each station
 
 % Submarine cable terminals
 % Western: Clarenville, Newfoundland, Canada
@@ -233,7 +249,7 @@ for i = 1:length(stations)
     Y = cos(deg2rad(text_lat)) * sin(deg2rad(text_lon));
     label_str = sprintf('%s', stations(i).name);
     text(X, Y, 1.2*Z, label_str, ...
-        'Color','w', 'FontSize', 4, 'FontWeight','bold');
+        'Color','r', 'FontSize', 4, 'FontWeight','bold');
 end
 
 %% ⚡ Auroral electrojet arrows — curved arcs along MLAT circles
@@ -252,8 +268,8 @@ frd_lon_deg = -77.4; frd_lat_deg = 35.2;
 mlat_esk = esk_lat_deg - rad2deg(deg2rad(11) * cos(deg2rad(esk_lon_deg - 72)));
 mlat_frd = frd_lat_deg - rad2deg(deg2rad(11) * cos(deg2rad(frd_lon_deg - 72)));
 
-% --- ESK: Westward Electrojet — arc tip at low-longitude (west) end ---
-lon_arc_esk = linspace(esk_lon_deg - arc_span_deg, esk_lon_deg + arc_span_deg, n_arc);
+% --- ESK: Westward Electrojet — west end near Clarenville (Cl, ~-54°W) ---
+lon_arc_esk = linspace(lon_A, esk_lon_deg + 20, n_arc);
 Xa = zeros(1,n_arc); Ya = zeros(1,n_arc); Za = zeros(1,n_arc);
 for k = 1:n_arc
     gl = mlat_to_glat(mlat_esk, lon_arc_esk(k));
@@ -269,8 +285,8 @@ quiver3(Xa(3), Ya(3), Za(3), d(1), d(2), d(3), ...
 text(Xa(1)-0.2, Ya(1)-0.01, Za(1)+0.05, ...
     'J_{w}', 'Color',[0.4 0.8 1], 'FontSize', 4, 'FontWeight','bold');
 
-% --- FRD: Eastward Electrojet — arc tip at high-longitude (east) end ---
-lon_arc_frd = linspace(frd_lon_deg - arc_span_deg/2, frd_lon_deg + arc_span_deg*1.5, n_arc);
+% --- FRD: Eastward Electrojet — east end near Clarenville (Cl, ~-54°W) ---
+lon_arc_frd = linspace(frd_lon_deg - 14, lon_A, n_arc);
 Xb = zeros(1,n_arc); Yb = zeros(1,n_arc); Zb = zeros(1,n_arc);
 for k = 1:n_arc
     gl = mlat_to_glat(mlat_frd, lon_arc_frd(k));
@@ -286,10 +302,14 @@ quiver3(Xb(end-2), Yb(end-2), Zb(end-2), d(1), d(2), d(3), ...
 text(Xb(40)-0.03, Yb(40)+0.03, Zb(40)+0.05, ...
     'J_{e}', 'Color',[1 0.5 0], 'FontSize', 4, 'FontWeight','bold');
 
-%% 🔗 Submarine cable route (TAT-1 waypoints)
-% TAT-1 approximate intermediate waypoints
-lat_cable = [lat_A, 50.5, 52.0, 53.5, 55.0, lat_B];
-lon_cable = [lon_A, -45.0, -35.0, -25.0, -15.0, lon_B];
+%% 🔗 Submarine cable route (TAT-1 waypoints — spline smoothed)
+lat_cable_wp = [lat_A, 50.5, 52.0, 53.5, 55.0, lat_B];
+lon_cable_wp = [lon_A, -45.0, -35.0, -25.0, -15.0, lon_B];
+
+t_wp   = linspace(0, 1, numel(lat_cable_wp));
+t_fine = linspace(0, 1, 300);
+lat_cable = interp1(t_wp, lat_cable_wp, t_fine, 'spline');
+lon_cable = interp1(t_wp, lon_cable_wp, t_fine, 'spline');
 
 rlat_cable = deg2rad(lat_cable);
 rlon_cable = deg2rad(lon_cable);
@@ -297,7 +317,7 @@ rlon_cable = deg2rad(lon_cable);
 X_cable = cos(rlat_cable) .* cos(rlon_cable);
 Y_cable = cos(rlat_cable) .* sin(rlon_cable);
 Z_cable = sin(rlat_cable);
-plot3(X_cable, Y_cable, Z_cable, 'b-', 'LineWidth', 1.);
+plot3(X_cable, Y_cable, Z_cable, 'W-', 'LineWidth', 3.0);
 
 cable_ends = struct( ...
     'name', {'Cl','Ob'}, ...
@@ -315,9 +335,10 @@ for i = 1:length(cable_ends)
     Y = cos(lat).*sin(lon);
     Z = sin(lat);
     
-    % Plot cable terminal marker
+    % Plot cable terminal marker — white filled circle, sized to match cable LineWidth
     R = 1.0;
-    plot3(R*X, R*Y, R*Z, 'bs', 'MarkerSize', 1, 'MarkerFaceColor','b', 'LineWidth', 0.01);
+    plot3(R*X, R*Y, R*Z, 'o', 'MarkerSize', 3, ...
+        'MarkerFaceColor','w', 'MarkerEdgeColor','w', 'LineWidth', 0.5);
     
     % Cable label - adjusted position
     text_lat = cable_ends(i).lat + cable_ends(i).text_lat;
@@ -331,7 +352,7 @@ end
 
 %% 🌙 View from night side (Atlantic-facing)
 zoom(6); % zoom in for better visibility
-view([50 40]); % Atlantic night-side view (facing Europe/Atlantic from space)
+view([30 30]); % Atlantic night-side view (facing Europe/Atlantic from space)
 
 %% 📸 Save figure
 set(gcf, 'InvertHardcopy', 'off'); % preserve dark background
