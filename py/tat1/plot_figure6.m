@@ -59,7 +59,7 @@ surf(x, y, z, flipud(earth_texture), ...
 axis equal off;
 
 %% 💡 Lighting - matches Sun position (Vietnam/108°E)
-sun_lon_deg = 130;
+sun_lon_deg = 160;
 sun_lon_rad = deg2rad(sun_lon_deg);
 light_pos = [cos(sun_lon_rad), sin(sun_lon_rad), 0];
 light('Position', light_pos, 'Style', 'infinite');
@@ -139,7 +139,7 @@ end
 %% ☀️ Geocentric Solar Magnetospheric (GSM) reference
 % GSM X-axis points toward Sun
 % Sun over Vietnam: ~108°E
-sun_lon = deg2rad(130); % Sun over Vietnam
+sun_lon = deg2rad(155); % Sun over Vietnam
 sun_lat = 0;
 
 % Sun direction vector (X-GSM)
@@ -173,12 +173,10 @@ t_mag = linspace(-1.5, 1.5, 100);
 plot3(t_mag*X_mag, t_mag*Y_mag, t_mag*Z_mag, 'g-', 'LineWidth', 0.5);
 plot3(X_mag, Y_mag, Z_mag, 'g.', 'MarkerSize', 10);
 
-% GSM Y-axis (dawn-dusk) — normalize the direction vector explicitly
-% (-Y_mag, X_mag, 0) is correct direction but NOT unit-length; norm ≈ 0.17
-Y_gsm_raw = [-Y_mag, X_mag, 0];
-Y_gsm_nrm = norm(Y_gsm_raw);
-X_gsm_y = Y_gsm_raw(1) / Y_gsm_nrm;  % normalized
-Y_gsm_y = Y_gsm_raw(2) / Y_gsm_nrm;
+% GSM Y-axis (dawn-dusk) — perpendicular to X_GSM in the equatorial plane
+% Y_GSM = 90° rotation of X_GSM: [-sin(sun_lon), cos(sun_lon), 0]
+X_gsm_y = -Y_sun;   % = -sin(sun_lon)
+Y_gsm_y =  X_sun;   % =  cos(sun_lon)
 Z_gsm_y = 0;
 
 t_y = linspace(-1.8, 1.8, 100);
@@ -210,7 +208,7 @@ stations = struct( ...
 % Western: Clarenville, Newfoundland, Canada
 lat_A = 48.54; lon_A = -53.97;
 % Eastern: Gallanach Bay, Oban, Scotland
-lat_B = 56.41; lon_B = -5.47;
+lat_B = 56.41; lon_B = -10;
 
 
 
@@ -322,7 +320,7 @@ for i = 1:length(cable_ends)
     
     % Plot cable terminal marker
     R = 1.0;
-    plot3(R*X, R*Y, R*Z, 'bs', 'MarkerSize', 1, 'MarkerFaceColor','y', 'LineWidth', 0.01);
+    % plot3(R*X, R*Y, R*Z, 'bs', 'MarkerSize', 1, 'MarkerFaceColor','y', 'LineWidth', 0.01);
     
     % Cable label - adjusted position
     text_lat = cable_ends(i).lat + cable_ends(i).text_lat;
@@ -336,7 +334,7 @@ end
 
 %% 🌙 View from night side (Atlantic-facing)
 zoom(6); % zoom in for better visibility
-view([30 60]); % Atlantic night-side view (facing Europe/Atlantic from space)
+view([40 60]); % Atlantic night-side view (facing Europe/Atlantic from space)
 
 %% 📸 Save figure
 set(gcf, 'InvertHardcopy', 'off'); % preserve dark background
