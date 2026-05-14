@@ -157,7 +157,7 @@ def get_conductivity_profile(dSegments, segments, bth):
     for p, seg in zip(profiles, segments):
         o = bth.iloc[seg[0] : seg[1]]
         depth = np.median(o["bathymetry.meters"])
-        p.layers[0].thickness = depth / 1e2  # in meters
+        p.layers[0].thickness = depth # in meters (/1e2)
     return profiles
 
 def load_extracted_voltage(fname="data/1958/Voltage/TAT1Volt-rescale.csv"):
@@ -179,7 +179,7 @@ def compile_1958(gplot=False):
     None
     """
     read_dataset()
-    names = ["CS-W", "DO-1", "DO-2", "DO-3", "DO-4", "MAR", "DO-5", "CS-E"]
+    names = ["CS-W", "DO-1", "DO-2", "DO-3", "MAR", "RDG", "DO-4", "CS-E"]
     _ = read_dataset()
     bathymetry, segment_coordinates, segments = get_bathymetry(names)
     # segment_names = ["FRD", "FRD", "FRD", "FRD", "HAD", "HAD", "HAD", "HAD"]

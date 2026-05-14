@@ -295,7 +295,7 @@ class SCUBASModel(object):
         t_mul=1.0,
     ):
         if t_mul == 1.0:
-            #self.initialize_TL(1e3)
+            # self.initialize_TL(1e-3)
             t_mul = 1e-3
         sp = StackPlots(
             nrows=nrows,
@@ -497,7 +497,8 @@ class SCUBASModel(object):
         sp = StackPlots(nrows=2, ncols=2, figsize=(4, 2.5), sharex=False, text_size=12)
         ax = sp.axes[0]
         ax.hist(e, 50, color="b", histtype="step")
-        ax.set_xlabel("Residuals, V", fontsize=12)
+        ax.set_xlabel(r"Residuals ($\hat{v}-v$), V", fontsize=12)
+        ax.axvline(0, color="k", lw=0.8, ls="--")
         ax.set_ylabel("Counts", fontsize=12)
         ax.tick_params(axis="x", labelsize=12)
         ax.set_xlim(lims)
@@ -538,8 +539,8 @@ class SCUBASModel(object):
             transform=ax.transAxes,
             fontsize=12,
         )
-        ax.set_xlabel("Predicted, V", fontsize=12)
-        ax.set_ylabel("Observed, V", fontsize=12)
+        ax.set_xlabel("Predicted ($\hat{v}$), V", fontsize=12)
+        ax.set_ylabel("Observed ($v$), V", fontsize=12)
         ax.tick_params(axis="x", labelsize=12)
         ax.tick_params(axis="y", labelsize=12)
 
@@ -551,10 +552,10 @@ class SCUBASModel(object):
             marker="s",
             s=4,
         )
-        ax.set_xlabel("Observed, V", fontsize=12)
+        ax.set_xlabel("Observed ($v$), V", fontsize=12)
         ax.set_xlim(lims)
         ax.set_ylim(lims)
-        ax.set_ylabel("Residuals, V", fontsize=12)
+        ax.set_ylabel("Residuals ($\hat{v}-v$)), V", fontsize=12)
         ax.text(
             0.05,
             0.9,
@@ -579,7 +580,7 @@ class SCUBASModel(object):
         ax.set_xlim(0, 2500)
         ax.set_ylim(lims)
         ax.axhline(0, color="k", lw=0.8, ls="--")
-        ax.set_ylabel("Residuals, V", fontsize=12)
+        ax.set_ylabel("Residuals ($\hat{v}-v)$), V", fontsize=12)
         ax.text(
             0.05,
             0.9,

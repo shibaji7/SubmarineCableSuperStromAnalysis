@@ -372,8 +372,8 @@ datasets_1958 = dict(
     sim = pd.read_csv("data/1958/TAT1SimVolt.csv", parse_dates=["Time"]),
     tags = [
         r"CS-W$_1$", r"DO-1$_1$", r"DO-2$_1$", 
-        r"DO-3$_1$", r"DO-4$_1$",
-        r"MAR$_1$", r"DO-5$_1$", r"CS-E$_1$",
+        r"DO-3$_1$", r"MAR$_1$",
+        r"RDG$_1$", r"DO-4$_1$", r"CS-E$_1$",
     ]
 )
 
