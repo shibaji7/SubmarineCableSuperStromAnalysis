@@ -12,10 +12,10 @@ def plot_scubas_compare():
     
     plt.rcParams['font.family'] = 'sans-serif'
     plt.rcParams['font.sans-serif'] = ['Helvetica', 'Arial']
-    plt.rcParams['font.size'] = 7
+    plt.rcParams['font.size'] = 10
     
     date_lims = [dt.datetime(1958, 2, 11, 1), dt.datetime(1958, 2, 11, 4)]
-    ylim = [-3, 3]
+    ylim = [-3000, 3000]
     
     fig, ax = plt.subplots(1, 1, figsize=(6, 2.5), dpi=1000)
     ax.xaxis.set_major_locator(mdates.MinuteLocator(byminute=range(0, 60, 30)))
@@ -23,7 +23,7 @@ def plot_scubas_compare():
     
     ax.scatter(
         obs.Time,
-        obs.Voltage / 1e3,
+        obs.Voltage,
         color="#0072B2",
         marker="s",
         s=3,
@@ -36,7 +36,7 @@ def plot_scubas_compare():
     
     ax.plot(
         sim_v.Time,
-        sim_v['Vt(v)'],
+        sim_v['Vt(v)']*1e3,
         color="#D55E00",
         lw=1.2,
         label="SCUBAS",
@@ -47,7 +47,7 @@ def plot_scubas_compare():
     
     ax.plot(
         sim_scaled_v.Time,
-        sim_scaled_v['Vt(v)'],
+        sim_scaled_v['Vt(v)']*1e3,
         color="#009E73",
         lw=1.0,
         label=fr"SCUBAS [$\sim$90% scaled |B| at western edge]",
@@ -77,7 +77,7 @@ def plot_scubas_compare():
     ax.legend(loc=2, fontsize=6)
     ax.set_ylim(ylim)
     ax.set_xlim(date_lims)
-    ax.set_ylabel(r"Voltage, $\times 10^3$ V (kV)")
+    ax.set_ylabel(r"Voltage (Volts)")
     ax.set_xlabel("Time, UT (11 Feb 1958)")
     
     fig.savefig("figures/tat1/1958.Scubas.Compare.png", bbox_inches='tight')

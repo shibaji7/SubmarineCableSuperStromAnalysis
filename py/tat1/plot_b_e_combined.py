@@ -64,7 +64,8 @@ def plot_b_e_fields():
     ax2.set_yticklabels([])
     ax2.set_xlim(xlim)
     
-    names = ["CS-E", "DO-5", "MAR", "DO-4", "RDG-1", "DO-3", "DO-2", "DO-1", "CS-W"]
+    names = ["CS-E", "DO-5", "RDG-1", "DO-4", "MAR", "DO-3", "DO-2", "DO-1", "CS-W"]
+    names.reverse()
     y_positions = np.array([9000, 8000, 7000, 6000, 5000, 4000, 3000, 2000, 1000])
     label_x = xlim[1] + dt.timedelta(minutes=2)
     

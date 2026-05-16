@@ -235,7 +235,7 @@ def compile_1958(gplot=False, scale=1.0):
     """
     read_dataset(scale=scale)
     # names = ["BAY", "CS-W", "DO-1", "DO-2", "DO-3", "RDG-1", "DO-4", "MAR", "DO-5", "CS-E"]
-    names = ["CS-W", "DO-1", "DO-2", "DO-3", "RDG-1", "DO-4", "MAR", "DO-5", "CS-E"]
+    names = ["CS-W", "DO-1", "DO-2", "DO-3", "MAR", "DO-4", "RDG-1", "DO-5", "CS-E"]
     _ = read_dataset(scale=scale)
     bathymetry, segment_coordinates, segments = get_bathymetry(names)
     # segment_names = ["FRD", "FRD", "FRD", "FRD", "HAD", "HAD", "HAD", "HAD"]
@@ -301,11 +301,11 @@ def compile_1958(gplot=False, scale=1.0):
         t_mul=1.0,
         nrows=3,
         ncols=3,
-        text_size=7,
+        text_size=12,
         tag0_loc=[0, 3, 6],
         tag1_loc=[6, 7, 8],
         tag2_loc=[2, 5, 8],
-        figsize=(7.2, 5),
+        figsize=(3.5,3),
     )
     
     obs = load_extracted_voltage()

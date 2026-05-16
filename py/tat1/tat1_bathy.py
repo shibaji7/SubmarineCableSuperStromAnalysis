@@ -15,6 +15,11 @@ def percentile(n):
     return percentile_
 
 def create_bathymetrystacks():
+    import matplotlib.pyplot as plt
+    plt.rcParams['font.family'] = 'sans-serif'
+    plt.rcParams['font.sans-serif'] = ['Helvetica', 'Arial']
+    plt.rcParams['font.size'] = 12
+
     file_path = "data/1958/lat_long_bathymetry-modified.csv"
     segments = [
         # (0, 10),
@@ -55,7 +60,7 @@ def create_bathymetrystacks():
     bathymetry = BathymetryAnalysis(file_path, segments, colors)
     bathymetry.load_data()
     # names = ["BAY", "CS-W", "DO-1", "DO-2", "DO-3", "RDG-1", "DO-4", "MAR", "DO-5", "CS-E"]
-    names = ["CS-W", "DO-1", "DO-2", "DO-3", "RDG-1", "DO-4", "MAR", "DO-5", "CS-E"]
+    names = ["CS-W", "DO-1", "DO-2", "DO-3", "MAR", "DO-4", "RDG-1", "DO-5", "CS-E"]
     bathymetry.plot_bathymetry(
         "figures/bathymetry_TAT1.png", 
         names=names, 
@@ -142,5 +147,5 @@ def convert_datasets(base_path: str = "data/1958/scaled_data/", scale=2.2):
     return
 
 if __name__ == "__main__":
-    convert_datasets()
-    # create_bathymetrystacks()
+    # convert_datasets()
+    create_bathymetrystacks()
