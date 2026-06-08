@@ -479,6 +479,374 @@ def _overlay_geomagnetic_latitude_contours(
     )
 
 
+def _constant_geomagnetic_latitude_trace(
+    date,
+    extent,
+    target_mlat=60.0,
+    lon_step=0.5,
+    lat_step=0.25,
+):
+    """Return a geographic lon/lat trace for one AACGM latitude."""
+    try:
+        import aacgmv2
+    except ImportError:
+        warnings.warn(
+            "aacgmv2 is not installed; skipping electrojet arrows.",
+            RuntimeWarning,
+        )
+        return np.array([]), np.array([])
+
+    lons = np.arange(extent[0], extent[1] + 0.5 * lon_step, lon_step)
+    lats = np.arange(extent[2], extent[3] + 0.5 * lat_step, lat_step)
+    trace_lons = []
+    trace_lats = []
+
+    for lon in lons:
+        mlats = np.full(lats.shape, np.nan, dtype=float)
+        lon_arr = np.full(lats.shape, lon, dtype=float)
+        try:
+            mlats, _, _ = aacgmv2.get_aacgm_coord_arr(lats, lon_arr, 300, date)
+            mlats = np.asarray(mlats, dtype=float)
+        except Exception:
+            for i, lat in enumerate(lats):
+                try:
+                    mlats[i], _, _ = aacgmv2.get_aacgm_coord(
+                        float(lat), float(lon), 300, date
+                    )
+                except Exception:
+                    continue
+
+        valid = np.isfinite(mlats)
+        if np.count_nonzero(valid) < 2:
+            continue
+
+        valid_lats = lats[valid]
+        valid_mlats = mlats[valid]
+        diff = valid_mlats - target_mlat
+        crossings = np.where(diff[:-1] * diff[1:] <= 0)[0]
+        if len(crossings) == 0:
+            continue
+
+        candidates = []
+        for idx in crossings:
+            lat0, lat1 = valid_lats[idx], valid_lats[idx + 1]
+            diff0, diff1 = diff[idx], diff[idx + 1]
+            if diff1 == diff0:
+                candidates.append(0.5 * (lat0 + lat1))
+            else:
+                candidates.append(lat0 - diff0 * (lat1 - lat0) / (diff1 - diff0))
+
+        if trace_lats:
+            lat_geo = min(candidates, key=lambda value: abs(value - trace_lats[-1]))
+        else:
+            lat_geo = min(candidates, key=lambda value: abs(value - 52.0))
+        trace_lons.append(lon)
+        trace_lats.append(lat_geo)
+
+    return np.asarray(trace_lons), np.asarray(trace_lats)
+
+
+def _trace_distance_km(trace_lons, trace_lats):
+    """Return cumulative great-circle distance along a lon/lat trace."""
+    if len(trace_lons) == 0:
+        return np.array([])
+
+    radius_km = 6371.0
+    cumulative = np.zeros(len(trace_lons), dtype=float)
+    for i in range(1, len(trace_lons)):
+        lat0 = math.radians(trace_lats[i - 1])
+        lat1 = math.radians(trace_lats[i])
+        dlat = lat1 - lat0
+        dlon = math.radians(trace_lons[i] - trace_lons[i - 1])
+        a = (
+            math.sin(dlat / 2.0) ** 2
+            + math.cos(lat0) * math.cos(lat1) * math.sin(dlon / 2.0) ** 2
+        )
+        cumulative[i] = cumulative[i - 1] + 2.0 * radius_km * math.asin(math.sqrt(a))
+    return cumulative
+
+
+def _sample_trace_equal_segments(trace_lons, trace_lats, n_segments=9):
+    """Sample midpoints of equal-distance segments along a lon/lat trace."""
+    cumulative = _trace_distance_km(trace_lons, trace_lats)
+    if len(cumulative) < 2 or cumulative[-1] <= 0:
+        return np.array([]), np.array([])
+
+    sample_distances = (np.arange(n_segments, dtype=float) + 0.5) * cumulative[-1] / n_segments
+    sample_lons = np.interp(sample_distances, cumulative, trace_lons)
+    sample_lats = np.interp(sample_distances, cumulative, trace_lats)
+    return sample_lons, sample_lats
+
+
+def _overlay_declination_arrows_on_trace(
+    ax,
+    date,
+    trace_lons,
+    trace_lats,
+    n_segments=9,
+    color="navy",
+    north_color="lightgreen",
+):
+    """Draw declination-angle arrows at equal-distance midpoints on a trace."""
+    try:
+        import pyIGRF
+    except ImportError:
+        warnings.warn(
+            "pyIGRF is not installed; skipping declination arrows.",
+            RuntimeWarning,
+        )
+        return []
+
+    import matplotlib.patheffects as path_effects
+    from matplotlib.patches import FancyArrowPatch
+
+    sample_lons, sample_lats = _sample_trace_equal_segments(
+        trace_lons,
+        trace_lats,
+        n_segments=n_segments,
+    )
+    if len(sample_lons) == 0:
+        return []
+
+    year_decimal = date.year + (date.timetuple().tm_yday - 1) / 365.25
+    transform = ccrs.PlateCarree()._as_mpl_transform(ax)
+    declinations = []
+
+    for i, (lon, lat) in enumerate(zip(sample_lons, sample_lats), start=1):
+        try:
+            declination, *_ = pyIGRF.igrf_value(
+                float(lat), float(lon), 0.0, year_decimal
+            )
+        except Exception:
+            continue
+
+        declinations.append((i, float(lon), float(lat), float(declination)))
+        arrow_length_lat = 4.2
+        north_start = (lon, lat - 0.5 * arrow_length_lat)
+        north_end = (lon, lat + 0.5 * arrow_length_lat)
+        north_arrow = FancyArrowPatch(
+            north_start,
+            north_end,
+            transform=transform,
+            arrowstyle="-|>",
+            mutation_scale=7,
+            linewidth=0.75,
+            color=north_color,
+            alpha=0.85,
+            zorder=10,
+        )
+        north_arrow.set_path_effects(
+            [path_effects.Stroke(linewidth=1.8, foreground="white"), path_effects.Normal()]
+        )
+        ax.add_patch(north_arrow)
+
+        if i == 1:
+            north_label = ax.text(
+                lon + 0.5,
+                lat + 0.55 * arrow_length_lat,
+                "Geo N",
+                ha="left",
+                va="center",
+                color=north_color,
+                fontsize=5.5,
+                fontdict={"weight": "bold"},
+                transform=ccrs.PlateCarree(),
+                zorder=11,
+            )
+            north_label.set_path_effects(
+                [path_effects.Stroke(linewidth=1.8, foreground="white"), path_effects.Normal()]
+            )
+
+        bearing = math.radians(float(declination))
+        dlat = arrow_length_lat * math.cos(bearing)
+        dlon = arrow_length_lat * math.sin(bearing) / max(math.cos(math.radians(lat)), 0.2)
+        start = (lon - 0.5 * dlon, lat - 0.5 * dlat)
+        end = (lon + 0.5 * dlon, lat + 0.5 * dlat)
+
+        arrow = FancyArrowPatch(
+            start,
+            end,
+            transform=transform,
+            arrowstyle="-|>",
+            mutation_scale=7,
+            linewidth=0.85,
+            color=color,
+            zorder=11,
+        )
+        arrow.set_path_effects(
+            [path_effects.Stroke(linewidth=1.9, foreground="white"), path_effects.Normal()]
+        )
+        ax.add_patch(arrow)
+
+        label = ax.text(
+            lon + 0.9,
+            lat - 1.35,
+            f"{declination:.0f}°",
+            ha="left",
+            va="center",
+            color=color,
+            fontsize=6,
+            fontdict={"weight": "bold"},
+            transform=ccrs.PlateCarree(),
+            zorder=11,
+        )
+        label.set_path_effects(
+            [path_effects.Stroke(linewidth=2.0, foreground="white"), path_effects.Normal()]
+        )
+
+    return declinations
+
+
+def _overlay_electrojet_arrows(
+    ax,
+    date,
+    extent,
+    target_mlat=60.0,
+    arrow_lons=(-62, -50, -38, -26, -14),
+    color="crimson",
+):
+    """Overlay schematic electrojet arrows along a constant geomagnetic latitude."""
+    trace_lons, trace_lats = _constant_geomagnetic_latitude_trace(
+        date=date,
+        extent=extent,
+        target_mlat=target_mlat,
+    )
+    if len(trace_lons) < 2:
+        return np.array([]), np.array([])
+
+    import matplotlib.patheffects as path_effects
+    from matplotlib.patches import FancyArrowPatch
+
+    ocean = (trace_lons >= -68) & (trace_lons <= -8)
+    trace_lons = trace_lons[ocean]
+    trace_lats = trace_lats[ocean]
+    if len(trace_lons) < 2:
+        return np.array([]), np.array([])
+
+    transform = ccrs.PlateCarree()._as_mpl_transform(ax)
+    ax.plot(
+        trace_lons,
+        trace_lats,
+        color=color,
+        lw=2.0,
+        alpha=0.9,
+        transform=ccrs.PlateCarree(),
+        zorder=9,
+        solid_capstyle="round",
+        path_effects=[path_effects.Stroke(linewidth=3.2, foreground="white"), path_effects.Normal()],
+    )
+
+    for lon in arrow_lons:
+        start_lon = lon - 2.0
+        end_lon = lon + 2.0
+        if start_lon < trace_lons.min() or end_lon > trace_lons.max():
+            continue
+        start_lat = np.interp(start_lon, trace_lons, trace_lats)
+        end_lat = np.interp(end_lon, trace_lons, trace_lats)
+        arrow = FancyArrowPatch(
+            (start_lon, start_lat),
+            (end_lon, end_lat),
+            transform=transform,
+            arrowstyle="-|>",
+            mutation_scale=13,
+            linewidth=1.8,
+            color=color,
+            zorder=10,
+        )
+        arrow.set_path_effects(
+            [path_effects.Stroke(linewidth=3.0, foreground="white"), path_effects.Normal()]
+        )
+        ax.add_patch(arrow)
+
+    return trace_lons, trace_lats
+
+
+def _overlay_tat18_context(ax, cables=["TAT1", "TAT8"], colors=["m", "gold"]):
+    """Overlay TAT-1/TAT-8 cables and the station labels used by the bathymetry map."""
+    for cbl, color in zip(cables, colors):
+        cable = getattr(SubSeaCables, cbl)
+        ax.scatter(
+            cable["Longitudes"],
+            cable["Latitudes"],
+            marker="s",
+            s=5,
+            c=color,
+            transform=ccrs.PlateCarree(),
+            zorder=6,
+        )
+        ax.plot(
+            cable["Longitudes"],
+            cable["Latitudes"],
+            ls="-",
+            lw=1.2,
+            color="k",
+            transform=ccrs.PlateCarree(),
+        )
+        for j in range(len(cable["Longitudes"]) - 1):
+            ax.text(
+                (cable["Longitudes"][j] + cable["Longitudes"][j + 1]) / 2,
+                1 + ((cable["Latitudes"][j] + cable["Latitudes"][j + 1]) / 2),
+                j + 1,
+                ha="center",
+                va="center",
+                transform=ccrs.PlateCarree(),
+                fontsize=8,
+                fontdict={"weight": "bold", "color": color},
+            )
+    ax.scatter(
+        [-77.4588, -52.7453, 355.516, -3.1757],
+        [38.3004, 47.5556, 50.995, 55.2678],
+        marker="D",
+        s=5,
+        c="r",
+        transform=ccrs.PlateCarree(),
+    )
+    ax.text(
+        -77.4588,
+        1 + 38.3004,
+        "FRD",
+        ha="center",
+        va="bottom",
+        transform=ccrs.PlateCarree(),
+        fontsize=10,
+        fontdict={"color": "r"},
+        rotation=90,
+        zorder=6,
+    )
+    ax.text(
+        -3.1757 + 2,
+        50.995 - 2,
+        "HAD",
+        ha="center",
+        va="bottom",
+        transform=ccrs.PlateCarree(),
+        fontsize=10,
+        fontdict={"color": "r"},
+        rotation=60,
+    )
+    ax.text(
+        355.516 + 1,
+        55.2678 + 2,
+        "ESK",
+        ha="center",
+        va="bottom",
+        transform=ccrs.PlateCarree(),
+        fontsize=10,
+        fontdict={"color": "r"},
+        zorder=6,
+    )
+    ax.text(
+        -52.7453,
+        47.5556 - 3,
+        "STJ",
+        ha="center",
+        va="bottom",
+        transform=ccrs.PlateCarree(),
+        fontsize=10,
+        fontdict={"color": "r"},
+    )
+
+
 def create_new_pane(
     date,
     extent=[-80, -5, 30, 60],
@@ -933,104 +1301,15 @@ def create_bathymetrymap_AJC(
 def create_bathymetrymap_tat18(
     cables=["TAT1", "TAT8"], colors=["m", "gold"], date=dt.datetime(1989, 3, 12)
 ):
+    extent = [-80, 10, 29, 71]
     fig, ax = create_new_pane(
         date, 
         central_longitude=-30,
         central_latitude=50,
-        extent=[-80, 10, 29, 71], darray=20,
+        extent=extent, darray=20,
         cx=[0.92, 0.2, 0.03, 0.5], 
     )
-    for cbl, color in zip(cables, colors):
-        cable = getattr(SubSeaCables, cbl)
-        ax.scatter(
-            cable["Longitudes"],
-            cable["Latitudes"],
-            marker="s",
-            s=5,
-            c=color,
-            transform=ccrs.PlateCarree(),
-            zorder=6,
-        )
-        ax.plot(
-            cable["Longitudes"],
-            cable["Latitudes"],
-            ls="-",
-            lw=1.2,
-            color="k",
-            transform=ccrs.PlateCarree(),
-        )
-        for j in range(len(cable["Longitudes"]) - 1):
-            ax.text(
-                (cable["Longitudes"][j] + cable["Longitudes"][j + 1]) / 2,
-                1 + ((cable["Latitudes"][j] + cable["Latitudes"][j + 1]) / 2),
-                j + 1,
-                ha="center",
-                va="center",
-                transform=ccrs.PlateCarree(),
-                fontsize=8,
-                fontdict={"weight": "bold", "color": color},
-            )
-    ax.scatter(
-        [-77.4588, -52.7453, 355.516, -3.1757],
-        [38.3004, 47.5556, 50.995, 55.2678],
-        marker="D",
-        s=5,
-        c="r",
-        transform=ccrs.PlateCarree(),
-    )
-    # ax.scatter(
-    #     [-77.4588, -3.1757],
-    #     [38.3004, 55.2678],
-    #     marker="D",
-    #     s=5,
-    #     c="r",
-    #     transform=ccrs.PlateCarree(),
-    #     zorder=6,
-    # )
-    ax.text(
-        -77.4588,
-        1 + 38.3004,
-        "FRD",
-        ha="center",
-        va="bottom",
-        transform=ccrs.PlateCarree(),
-        fontsize=10,
-        fontdict={"color": "r"},
-        rotation=90,
-        zorder=6,
-    )
-    ax.text(
-        -3.1757+2,
-        50.995 - 2,
-        "HAD",
-        ha="center",
-        va="bottom",
-        transform=ccrs.PlateCarree(),
-        fontsize=10,
-        fontdict={"color": "r"},
-        rotation=60,
-    )
-    ax.text(
-        355.516 + 1,
-        55.2678 + 2,
-        "ESK",
-        ha="center",
-        va="bottom",
-        transform=ccrs.PlateCarree(),
-        fontsize=10,
-        fontdict={"color": "r"},
-        zorder=6,
-    )
-    ax.text(
-        -52.7453,
-        47.5556 - 3,
-        "STJ",
-        ha="center",
-        va="bottom",
-        transform=ccrs.PlateCarree(),
-        fontsize=10,
-        fontdict={"color": "r"},
-    )
+    _overlay_tat18_context(ax, cables=cables, colors=colors)
     plt.savefig(
         os.path.join("figures", "GEBCO_2024_Bathymetry_TAT1,8.png"),
         dpi=1000,
@@ -1044,8 +1323,46 @@ def create_bathymetrymap_tat18(
     return
 
 
+def create_electrojet_geomagnetic_latitude_map(
+    cables=["TAT1"],
+    colors=["m"],
+    date=dt.datetime(1989, 3, 12),
+    target_mlat=60.0,
+):
+    extent = [-80, 10, 40, 80]
+    fig, ax = create_new_pane(
+        date,
+        central_longitude=-30,
+        central_latitude=50,
+        extent=extent,
+        darray=20,
+        cx=[0.92, 0.2, 0.03, 0.5],
+    )
+    _overlay_tat18_context(ax, cables=cables, colors=colors)
+    trace_lons, trace_lats = _overlay_electrojet_arrows(
+        ax,
+        date=date,
+        extent=extent,
+        target_mlat=target_mlat,
+    )
+    declinations = _overlay_declination_arrows_on_trace(
+        ax,
+        date=date,
+        trace_lons=trace_lons,
+        trace_lats=trace_lats,
+        n_segments=9,
+    )
+    output = os.path.join(
+        "figures", "GEBCO_2024_Bathymetry_TAT1,8_Electrojet_60MLAT"
+    )
+    plt.savefig(f"{output}.png", dpi=1000, bbox_inches="tight")
+    plt.savefig(f"{output}.pdf", bbox_inches="tight")
+    return declinations
+
+
 if __name__ == "__main__":
     # create_bathymetrymap_NA(["TAT1", "TAT8"])
     # create_bathymetrymap_NA(["TAT1"])
     create_bathymetrymap_tat18()
+    create_electrojet_geomagnetic_latitude_map()
     # create_bathymetrymap_AJC()
