@@ -578,6 +578,62 @@ def _sample_trace_equal_segments(trace_lons, trace_lats, n_segments=9):
     return sample_lons, sample_lats
 
 
+def _sample_trace_tangents(trace_lons, trace_lats, sample_lons):
+    """Return unit tangent vectors in lon/lat plotting coordinates."""
+    if len(trace_lons) < 2 or len(sample_lons) == 0:
+        return np.array([]), np.array([])
+
+    slopes = np.gradient(trace_lats, trace_lons)
+    sample_slopes = np.interp(sample_lons, trace_lons, slopes)
+    tangent_lons = np.ones(len(sample_lons), dtype=float)
+    tangent_lats = sample_slopes
+    norm = np.sqrt(tangent_lons**2 + tangent_lats**2)
+    tangent_lons = tangent_lons / norm
+    tangent_lats = tangent_lats / norm
+    return tangent_lons, tangent_lats
+
+
+def _plot_right_angle_marker(
+    ax,
+    lon,
+    lat,
+    tangent_lon,
+    tangent_lat,
+    decl_lon,
+    decl_lat,
+    size=0.65,
+    color="k",
+):
+    """Draw a small corner marker between the MLAT tangent and declination vector."""
+    import matplotlib.patheffects as path_effects
+
+    tangent = np.array([tangent_lon, tangent_lat], dtype=float)
+    declination = np.array([decl_lon, decl_lat], dtype=float)
+    tangent = tangent / np.linalg.norm(tangent)
+    declination = declination / np.linalg.norm(declination)
+
+    center = np.array([lon, lat], dtype=float)
+    corner = center + 0.35 * size * (tangent + declination)
+    points = np.vstack(
+        [
+            corner - size * tangent,
+            corner,
+            corner - size * declination,
+        ]
+    )
+    marker = ax.plot(
+        points[:, 0],
+        points[:, 1],
+        color=color,
+        lw=0.8,
+        transform=ccrs.PlateCarree(),
+        zorder=12,
+    )[0]
+    marker.set_path_effects(
+        [path_effects.Stroke(linewidth=1.8, foreground="white"), path_effects.Normal()]
+    )
+
+
 def _overlay_declination_arrows_on_trace(
     ax,
     date,
@@ -608,11 +664,18 @@ def _overlay_declination_arrows_on_trace(
     if len(sample_lons) == 0:
         return []
 
+    tangent_lons, tangent_lats = _sample_trace_tangents(
+        trace_lons,
+        trace_lats,
+        sample_lons,
+    )
     year_decimal = date.year + (date.timetuple().tm_yday - 1) / 365.25
     transform = ccrs.PlateCarree()._as_mpl_transform(ax)
     declinations = []
 
-    for i, (lon, lat) in enumerate(zip(sample_lons, sample_lats), start=1):
+    for i, (lon, lat, tangent_lon, tangent_lat) in enumerate(
+        zip(sample_lons, sample_lats, tangent_lons, tangent_lats), start=1
+    ):
         try:
             declination, *_ = pyIGRF.igrf_value(
                 float(lat), float(lon), 0.0, year_decimal
@@ -677,6 +740,34 @@ def _overlay_declination_arrows_on_trace(
             [path_effects.Stroke(linewidth=1.9, foreground="white"), path_effects.Normal()]
         )
         ax.add_patch(arrow)
+
+        decl_unit_lon = dlon / math.sqrt(dlon**2 + dlat**2)
+        decl_unit_lat = dlat / math.sqrt(dlon**2 + dlat**2)
+        _plot_right_angle_marker(
+            ax,
+            lon,
+            lat,
+            tangent_lon,
+            tangent_lat,
+            decl_unit_lon,
+            decl_unit_lat,
+        )
+        if i == 5:
+            angle_label = ax.text(
+                lon - 1.0,
+                lat + 1.1,
+                r"$\sim90^\circ$",
+                ha="right",
+                va="center",
+                color="k",
+                fontsize=6,
+                fontdict={"weight": "bold"},
+                transform=ccrs.PlateCarree(),
+                zorder=13,
+            )
+            angle_label.set_path_effects(
+                [path_effects.Stroke(linewidth=2.0, foreground="white"), path_effects.Normal()]
+            )
 
         label = ax.text(
             lon + 0.9,
@@ -847,6 +938,249 @@ def _overlay_tat18_context(ax, cables=["TAT1", "TAT8"], colors=["m", "gold"]):
     )
 
 
+def _dipole_unit_vector(pole_lat=79.0, pole_lon=-71.0):
+    """Return the centered-dipole north-pole unit vector."""
+    pole_lat = math.radians(pole_lat)
+    pole_lon = math.radians(pole_lon)
+    return np.array(
+        [
+            math.cos(pole_lat) * math.cos(pole_lon),
+            math.cos(pole_lat) * math.sin(pole_lon),
+            math.sin(pole_lat),
+        ],
+        dtype=float,
+    )
+
+
+def _dipole_mlat(lons, lats, pole_lat=79.0, pole_lon=-71.0):
+    """Compute centered-dipole magnetic latitude for geographic lon/lat arrays."""
+    pole = _dipole_unit_vector(pole_lat=pole_lat, pole_lon=pole_lon)
+    lon_rad = np.radians(lons)
+    lat_rad = np.radians(lats)
+    x = np.cos(lat_rad) * np.cos(lon_rad)
+    y = np.cos(lat_rad) * np.sin(lon_rad)
+    z = np.sin(lat_rad)
+    dot = x * pole[0] + y * pole[1] + z * pole[2]
+    return np.degrees(np.arcsin(np.clip(dot, -1.0, 1.0)))
+
+
+def _constant_dipole_latitude_trace(
+    extent,
+    target_mlat=60.0,
+    pole_lat=79.0,
+    pole_lon=-71.0,
+    lon_step=0.5,
+):
+    """Return a centered-dipole constant-latitude trace in geographic lon/lat."""
+    pole = _dipole_unit_vector(pole_lat=pole_lat, pole_lon=pole_lon)
+    target = math.sin(math.radians(target_mlat))
+    lons = np.arange(extent[0], extent[1] + 0.5 * lon_step, lon_step)
+    trace_lons = []
+    trace_lats = []
+
+    for lon in lons:
+        lon_rad = math.radians(lon)
+        horizontal = pole[0] * math.cos(lon_rad) + pole[1] * math.sin(lon_rad)
+        vertical = pole[2]
+        amplitude = math.sqrt(horizontal**2 + vertical**2)
+        if amplitude < abs(target):
+            continue
+
+        phase = math.atan2(horizontal, vertical)
+        root = math.asin(target / amplitude)
+        candidates = [
+            math.degrees(root - phase),
+            math.degrees(math.pi - root - phase),
+        ]
+        candidates = [lat for lat in candidates if extent[2] <= lat <= extent[3]]
+        if not candidates:
+            continue
+
+        if trace_lats:
+            lat = min(candidates, key=lambda value: abs(value - trace_lats[-1]))
+        else:
+            lat = min(candidates, key=lambda value: abs(value - 55.0))
+        trace_lons.append(lon)
+        trace_lats.append(lat)
+
+    return np.asarray(trace_lons), np.asarray(trace_lats)
+
+
+def _overlay_dipole_mlat_contours(
+    ax,
+    extent,
+    pole_lat=79.0,
+    pole_lon=-71.0,
+    lon_step=2.0,
+    lat_step=2.0,
+    level_step=10.0,
+):
+    """Overlay centered-dipole magnetic-latitude contours."""
+    lons = np.arange(extent[0] - 20, extent[1] + 20 + lon_step, lon_step)
+    lats = np.arange(extent[2], extent[3] + lat_step, lat_step)
+    lon2d, lat2d = np.meshgrid(lons, lats)
+    mlat = _dipole_mlat(lon2d, lat2d, pole_lat=pole_lat, pole_lon=pole_lon)
+    levels = np.arange(
+        np.floor(np.nanmin(mlat) / level_step) * level_step,
+        np.ceil(np.nanmax(mlat) / level_step) * level_step + 0.5 * level_step,
+        level_step,
+    )
+
+    cs = ax.contour(
+        lon2d,
+        lat2d,
+        mlat,
+        levels=levels,
+        colors="orangered",
+        linewidths=0.4,
+        linestyles="--",
+        alpha=0.65,
+        transform=ccrs.PlateCarree(),
+        zorder=6,
+    )
+    _clabel_at_fixed_longitude(
+        ax,
+        cs,
+        extent=extent,
+        lon_label=-60.0,
+        fmt=r"%d° MLAT",
+        inline=True,
+        fontsize=8,
+        colors="orangered",
+        zorder=6,
+    )
+
+
+def _overlay_dipole_orthogonality_arrows(
+    ax,
+    trace_lons,
+    trace_lats,
+    n_segments=9,
+    tangent_color="crimson",
+    normal_color="navy",
+    north_color="lightgreen",
+):
+    """Draw exact tangent/normal arrows for a dipole constant-latitude trace."""
+    import matplotlib.patheffects as path_effects
+    from matplotlib.patches import FancyArrowPatch
+
+    sample_lons, sample_lats = _sample_trace_equal_segments(
+        trace_lons,
+        trace_lats,
+        n_segments=n_segments,
+    )
+    tangent_lons, tangent_lats = _sample_trace_tangents(
+        trace_lons,
+        trace_lats,
+        sample_lons,
+    )
+    if len(sample_lons) == 0:
+        return
+
+    transform = ccrs.PlateCarree()._as_mpl_transform(ax)
+    for i, (lon, lat, tangent_lon, tangent_lat) in enumerate(
+        zip(sample_lons, sample_lats, tangent_lons, tangent_lats), start=1
+    ):
+        tangent = np.array([tangent_lon, tangent_lat], dtype=float)
+        tangent = tangent / np.linalg.norm(tangent)
+        normal = np.array([-tangent[1], tangent[0]], dtype=float)
+        if normal[1] < 0:
+            normal = -normal
+
+        tangent_len = 4.0
+        normal_len = 3.8
+        north = np.array([0.0, 1.0], dtype=float)
+        north_len = 4.4
+        north_lon = lon - 1.2
+        north_lat = lat
+        north_start = (
+            north_lon - 0.5 * north_len * north[0],
+            north_lat - 0.5 * north_len * north[1],
+        )
+        north_end = (
+            north_lon + 0.5 * north_len * north[0],
+            north_lat + 0.5 * north_len * north[1],
+        )
+        north_arrow = FancyArrowPatch(
+            north_start,
+            north_end,
+            transform=transform,
+            arrowstyle="-|>",
+            mutation_scale=10,
+            linewidth=1.25,
+            color=north_color,
+            zorder=13,
+        )
+        north_arrow.set_path_effects(
+            [path_effects.Stroke(linewidth=2.6, foreground="white"), path_effects.Normal()]
+        )
+        ax.add_patch(north_arrow)
+        if i == 1:
+            north_label = ax.text(
+                north_lon + 0.45,
+                north_lat + 0.55 * north_len,
+                "Geo N",
+                ha="left",
+                va="center",
+                color=north_color,
+                fontsize=5.5,
+                fontdict={"weight": "bold"},
+                transform=ccrs.PlateCarree(),
+                zorder=13,
+            )
+            north_label.set_path_effects(
+                [path_effects.Stroke(linewidth=2.0, foreground="white"), path_effects.Normal()]
+            )
+
+        for vector, length, color, zorder in [
+            (tangent, tangent_len, tangent_color, 11),
+            (normal, normal_len, normal_color, 12),
+        ]:
+            start = (lon - 0.5 * length * vector[0], lat - 0.5 * length * vector[1])
+            end = (lon + 0.5 * length * vector[0], lat + 0.5 * length * vector[1])
+            arrow = FancyArrowPatch(
+                start,
+                end,
+                transform=transform,
+                arrowstyle="-|>",
+                mutation_scale=8,
+                linewidth=0.9,
+                color=color,
+                zorder=zorder,
+            )
+            arrow.set_path_effects(
+                [path_effects.Stroke(linewidth=2.0, foreground="white"), path_effects.Normal()]
+            )
+            ax.add_patch(arrow)
+
+        _plot_right_angle_marker(
+            ax,
+            lon,
+            lat,
+            tangent[0],
+            tangent[1],
+            normal[0],
+            normal[1],
+            size=0.8,
+        )
+        if i == 5:
+            label = ax.text(
+                lon - 0.8,
+                lat - 3.0,
+                r"$90^\circ$",
+                ha="right",
+                va="center",
+                color="k",
+                fontsize=7,
+                fontdict={"weight": "bold"},
+                transform=ccrs.PlateCarree(),
+                zorder=13,
+            )
+            label.set_path_effects(
+                [path_effects.Stroke(linewidth=2.2, foreground="white"), path_effects.Normal()]
+            )
+
+
 def create_new_pane(
     date,
     extent=[-80, -5, 30, 60],
@@ -854,6 +1188,7 @@ def create_new_pane(
     central_latitude=0.30,
     darray=20,
     cx=[0.92, 0.3, 0.03, 0.8],  # Changed colorbar location to right side
+    overlay_mlat=True,
 ):
     ##############################################################
     # Download GEBCO data from https://www.gebco.net/data_and_products/gridded_bathymetry_data/
@@ -936,7 +1271,8 @@ def create_new_pane(
     cb.ax.set_title("Depth, m", fontsize=10, pad=6, x=1.1)
     ax.set_extent(extent, crs=cartopy.crs.PlateCarree())
     # _overlay_declination_contours(ax=ax, date=date, extent=extent)
-    _overlay_geomagnetic_latitude_contours(ax=ax, date=date, extent=extent)
+    if overlay_mlat:
+        _overlay_geomagnetic_latitude_contours(ax=ax, date=date, extent=extent)
     ax.overaly_coast_lakes(lw=0.4, alpha=0.8)
     GeoAxes.add_feature(
         ax,
@@ -1360,9 +1696,68 @@ def create_electrojet_geomagnetic_latitude_map(
     return declinations
 
 
+def create_dipole_orthogonality_geomagnetic_latitude_map(
+    cables=["TAT1"],
+    colors=["m"],
+    date=dt.datetime(1989, 3, 12),
+    target_mlat=60.0,
+    pole_lat=79.0,
+    pole_lon=-71.0,
+):
+    extent = [-80, 10, 29, 71]
+    fig, ax = create_new_pane(
+        date,
+        central_longitude=-30,
+        central_latitude=50,
+        extent=extent,
+        darray=20,
+        cx=[0.92, 0.2, 0.03, 0.5],
+        overlay_mlat=False,
+    )
+    _overlay_dipole_mlat_contours(
+        ax,
+        extent=extent,
+        pole_lat=pole_lat,
+        pole_lon=pole_lon,
+    )
+    _overlay_tat18_context(ax, cables=cables, colors=colors)
+    trace_lons, trace_lats = _constant_dipole_latitude_trace(
+        extent=extent,
+        target_mlat=target_mlat,
+        pole_lat=pole_lat,
+        pole_lon=pole_lon,
+    )
+    ocean = (trace_lons >= -68) & (trace_lons <= -8)
+    trace_lons = trace_lons[ocean]
+    trace_lats = trace_lats[ocean]
+    ax.plot(
+        trace_lons,
+        trace_lats,
+        color="crimson",
+        lw=2.0,
+        alpha=0.9,
+        transform=ccrs.PlateCarree(),
+        zorder=9,
+        solid_capstyle="round",
+    )
+    _overlay_dipole_orthogonality_arrows(
+        ax,
+        trace_lons=trace_lons,
+        trace_lats=trace_lats,
+        n_segments=9,
+    )
+    output = os.path.join(
+        "figures", "GEBCO_2024_Bathymetry_TAT1,8_Dipole_Orthogonality_60MLAT"
+    )
+    plt.savefig(f"{output}.png", dpi=1000, bbox_inches="tight")
+    plt.savefig(f"{output}.pdf", bbox_inches="tight")
+    return
+
+
 if __name__ == "__main__":
     # create_bathymetrymap_NA(["TAT1", "TAT8"])
     # create_bathymetrymap_NA(["TAT1"])
     create_bathymetrymap_tat18()
     create_electrojet_geomagnetic_latitude_map()
+    # create_dipole_orthogonality_geomagnetic_latitude_map()
     # create_bathymetrymap_AJC()
