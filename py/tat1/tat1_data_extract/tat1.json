@@ -1,0 +1,58 @@
+{
+  "image": "fig3_source_600dpi_cropped.png",
+  "output": "tat1_overlay.png",
+  "event_date": "1958-02-11",
+  "source": "Digitized from TAT1 figure",
+  "panels": [
+    {
+      "name": "SITKA",
+      "csv": "scaled/SITKA.csv",
+      "color": "#d62728",
+      "x_left": 680.0,
+      "x_right": 3270.0,
+      "y_center": 260.0,
+      "half_height": 230.0,
+      "bias": 0.1
+    },
+    {
+      "name": "Halley Bay",
+      "csv": "scaled/HalleyBay.csv",
+      "color": "#1f77b4",
+      "x_left": 680.0,
+      "x_right": 3270.0,
+      "y_center": 2100.0,
+      "half_height": 250.0,
+      "bias": 0.1
+    },
+    {
+      "name": "BYRD",
+      "csv": "scaled/BYRD.csv",
+      "color": "#2ca02c",
+      "x_left": 680.0,
+      "x_right": 3270.0,
+      "y_center": 2520.0,
+      "half_height": 220.0,
+      "bias": 0.0
+    },
+    {
+      "name": "AU",
+      "csv": "scaled/AU.csv",
+      "color": "#9467bd",
+      "x_left": 690.0,
+      "x_right": 3290.0,
+      "y_center": 2980.0,
+      "half_height": 120.0,
+      "bias": 0.1
+    },
+    {
+      "name": "AL",
+      "csv": "scaled/AL.csv",
+      "color": "#ff7f0e",
+      "x_left": 690.0,
+      "x_right": 3290.0,
+      "y_center": 3300.0,
+      "half_height": 210.0,
+      "bias": -0.65
+    }
+  ]
+}
