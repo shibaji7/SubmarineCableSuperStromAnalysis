@@ -1041,6 +1041,7 @@ def figure09() -> list[Path]:
     al0 = float(al["value"].iloc[:3].mean())
     al_deviation = al["value"] - al0
     peak_al_value = float(al_deviation.min())
+    model_al_cap = -800.0
 
     snapshot_specs = [
         ("Pre-storm", 0.51),
@@ -1089,7 +1090,8 @@ def figure09() -> list[Path]:
         _, au_value = nearest_baseline_removed_value(au, target_hour, au0)
         hour, al_value = nearest_baseline_removed_value(al, target_hour, al0)
         display_hour = target_hour if label == "Peak" else hour
-        model_al_value = peak_al_value if label == "Peak" else al_value
+        observed_al_value = peak_al_value if label == "Peak" else al_value
+        model_al_value = max(observed_al_value, model_al_cap) if label == "Peak" else al_value
         hh = int(display_hour)
         mm = int(round((display_hour - hh) * 60))
         if mm == 60:
@@ -1107,7 +1109,8 @@ def figure09() -> list[Path]:
                 "timestamp": timestamp,
                 "hour": display_hour,
                 "AU": au_value,
-                "AL": model_al_value,
+                "observed_AL": observed_al_value,
+                "model_AL": model_al_value,
                 "poleward_geo": boundary_to_geo(poleward, timestamp),
                 "equatorward_geo": boundary_to_geo(equatorward, timestamp),
                 "diffuse_geo": boundary_to_geo(diffuse, timestamp),
@@ -1122,8 +1125,8 @@ def figure09() -> list[Path]:
         "light_grey": "0.82",
     }
     boundary_styles = {
-        "poleward": dict(color=colors["deep_blue"], ls="-", lw=1.5, label="Poleward boundary"),
-        "equatorward": dict(color=colors["deep_blue"], ls="--", lw=1.5, label="Equatorward boundary"),
+        "poleward": dict(color=colors["deep_blue"], ls="--", lw=1.5, label="Poleward boundary"),
+        "equatorward": dict(color=colors["deep_blue"], ls="-", lw=1.5, label="Equatorward boundary"),
         "diffuse": dict(color=colors["grey"], ls=":", lw=1.2, label="Diffuse boundary"),
     }
 
@@ -1177,7 +1180,8 @@ def figure09() -> list[Path]:
                 transform=data_crs,
                 zorder=3,
             )
-        for boundary in ("diffuse", "equatorward", "poleward"):
+        #for boundary in ("diffuse", "equatorward", "poleward"):
+        for boundary in ("equatorward",):
             style = dict(boundary_styles[boundary])
             boundary_label = style.pop("label")
             lon, lat = snapshot[f"{boundary}_geo"]
@@ -1223,8 +1227,12 @@ def figure09() -> list[Path]:
         if mm == 60:
             hh += 1
             mm = 0
+        title = (
+            f"{label} {snapshot['label']}\n"
+            f"{hh:02d}:{mm:02d} UT, AL={snapshot['observed_AL']:.0f} nT"
+        )
         ax.set_title(
-            f"{label} {snapshot['label']}\n{hh:02d}:{mm:02d} UT, AL={snapshot['AL']:.0f} nT",
+            title,
             fontsize=8.5,
             fontweight="bold",
             pad=5,
